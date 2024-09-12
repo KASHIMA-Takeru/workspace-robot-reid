@@ -16,7 +16,7 @@ import sys
 import time
 from turtle import color
 sys.path.append(".")
-
+sys.path.append(r"C:\Users\ab19109\workspce_robot_reid")
 # Import RTM module
 import RTC
 import OpenRTM_aist
@@ -35,7 +35,7 @@ import base64
 import datetime
 
 
-from MyTools import openpose_key
+from MyTools import openpose_processor as opp
 
 from reid_base import ReIDBase
 
@@ -207,8 +207,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         #画像の高さと幅
         self.height = 480
         self.width = 640
-
-		
+        
 
 
         # initialize of configuration-data.
@@ -226,15 +225,17 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
     # 
     #
     def onInitialize(self):
+
         # Bind variables and configuration variable
 		
         # Set InPort buffers
-        self.addInPort("image_data",self._image_dataIn)
-        self.addInPort("depth_data",self._depth_dataIn)
+        self.addInPort("image_data", self._image_dataIn)
+        self.addInPort("depth_data", self._depth_dataIn)
 		
         # Set OutPort buffers
-        self.addOutPort("motion_instruction",self._motion_instructionOut)
+        self.addOutPort("motion_instruction", self._motion_instructionOut)
 		
+
         # Set service provider to Ports
 		
         # Set service consumers to Ports
@@ -244,7 +245,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         #Re-IDクラスのオブジェクト生成
         self.reid = ReIDBase(
             pivod_dict = self.pivod_dict, 
-            save_dir = self.save_dir,
+            save_dir = self.save_folder,
             use_part = True,
             thrs = self.thrs,
             maxk = 20
@@ -376,7 +377,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             color_img_flag = True
 
             #OpenPoseで人物検出
-            people_list, key_list, keyimage = openpose_key(color_image)
+            people_list, key_list, keyimage = opp.detect_keypoints(color_image)
             #people_list (list): 人物画像のリスト
             #key_list (list): 各人物のキーポイントの検出結果をまとめたリスト
             #keyimage (ndarray): キーポイントを線で結んだ画像
