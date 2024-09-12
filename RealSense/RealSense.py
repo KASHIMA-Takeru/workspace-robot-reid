@@ -77,7 +77,7 @@ class RealSense(OpenRTM_aist.DataFlowComponentBase):
 		"""
 		"""
 		self._RGB_imageOut = OpenRTM_aist.OutPort("RGB_image", self._d_rgb_img)
-		Depth_arg = [None] * ((len(RTC._d_PointCloud) - 4) / 2)
+		#Depth_arg = [None] * ((len(RTC._d_PointCloud) - 4) / 2)
 		self._d_Depth = RTC.CameraImage(RTC.Time(0,0),0,0,0,"",0.0,"")
 		"""
 		"""
@@ -177,8 +177,7 @@ class RealSense(OpenRTM_aist.DataFlowComponentBase):
 		#
 	def onActivated(self, ec_id):
 		print("Activate RealSense")
-		print("Preparing RealSense...")
-
+		
 		#Configure depth and color streams
 		self.pipeline = rs.pipeline()
 		self.config = rs.config()
@@ -207,7 +206,6 @@ class RealSense(OpenRTM_aist.DataFlowComponentBase):
 
 		else:
 			self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 60)
-
 
 		#Start streaming
 		self.pipeline.start(self.config)

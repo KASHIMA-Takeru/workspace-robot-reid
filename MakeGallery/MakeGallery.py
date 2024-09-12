@@ -242,8 +242,8 @@ class MakeGallery(OpenRTM_aist.DataFlowComponentBase):
             cv2.waitKey(1)
             print("#3")
             #人物画像作成
-            bbox_list = opp.make_person_image(image, key_list=keys)
-            cropped_images = opp.openpose_processor.make_part_images(image, keys)
+            bbox_list = opp.make_person_image(image, keypoints=keys)
+            cropped_images = opp.make_part_image(image, keys)
             print("#4")    
                 
             for i, bbox in enumerate(bbox_list):
