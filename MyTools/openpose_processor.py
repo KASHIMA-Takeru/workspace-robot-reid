@@ -1061,7 +1061,7 @@ def make_part_image(image: np.ndarray, keypoints: np.ndarray or None):
     h, w, _ = image.shape
     
     #部位ごとに切り取る位置を決める
-    coordinates = decide_coordinates(keypoints[0], w, h)
+    coordinates = decide_coordinates(keypoints, w, h)
     
     #切り取った画像を入れていく辞書
     part_images = {}

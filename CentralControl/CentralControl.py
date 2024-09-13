@@ -375,20 +375,31 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             color_image = cv2.imdecode(data_np, 1)
 
             color_img_flag = True
+            print("#1")
 
             #OpenPoseで人物検出
-            people_list, key_list, keyimage = opp.detect_keypoints(color_image)
+            key_list, keyimage = opp.detect_keypoints(color_image)
+            bbox_list = opp.make_person_image(color_image, key_list)
+            people_list = []
+
+            for (top, bottom, left, right) in bbox_list:
+                person = color_image[top: bottom, left: right]
+                people_list.append(person)
+
+            print("#2")
             #people_list (list): 人物画像のリスト
             #key_list (list): 各人物のキーポイントの検出結果をまとめたリスト
             #keyimage (ndarray): キーポイントを線で結んだ画像
 
             #人物が検出された場合
             if len(people_list) >= 1:
+                print("#3")
                 #Re-ID実行
                 target_index = self.reid.run_reid(people_list, self.target_id, key_list)
-
+                print("#4")
                 #対象人物が見つからなかった場合
                 if target_index == None:
+                    print("Lost target")
                     #ロボットは移動せずその場で回転．回転方向はランダムに決める
                     if rd.random() > 0.5:
                         self._d_motion_instruct.data.va = self.va
@@ -398,10 +409,12 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
 
                 #対象人物が見つかった場合
                 else:
+                    print("Detect target")
                     person_flag = True
                     #対象人物の位置を特定
                     #target_indexは，people_listの何番目が対象かをstrで表している
                     target_index = int(target_index)
+                    print("target index > ", target_index)
                     target_person = people_list[target_index]
 
                     #追尾対象の中心位置( = 心臓の位置)
@@ -409,18 +422,18 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                     target_y = key_list[target_index][1][0]
                     #対象人物の中心を円で囲う
                     cv2.circle(keyimage, (target_x, target_y), 10, (255, 0, 0), thickness=2)
-
+                    print("#4.1")
                     #目標点( = 追尾対象の中心位置)がカメラ画角より左側にある場合
                     if target_x < 220:
                         self._d_motion_instruct.va = self.va
-
+                        print("#4.2")
                     #目標点がカメラ画角より右側にある場合
                     elif target_x > 420:
                         self._d_motion_instruct.va = -1 * self.va
-
+                        print("#4.3")
                     else:
                         self._d_motion_instruct.va = 0.0
-
+                        print("#4.4")
             color_img_flag = True
 
 
@@ -428,33 +441,40 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         深度画像に関する処理
         '''
         if self._depth_dataIn.isNew():
+            print("#5")
             self._d_depth_data = self._depth_dataIn.read()
-
+            print("#5.1")
             #深度データのByte列
             received_depth = self._d_depth_data.pixels
+            print("#5.2")
             #Decode
             dept_json = json.loads(received_depth)
+            print("#5.3")
             dept_dec = base64.b64decode(dept_json)
+            print("#5.4")
             dept_np = np.frombuffer(dept_dec, dtype='uint8')
-            depth = cv2.imdecode(dept_np, flag=cv2.IMREAD_GRAYSCALE)
+            print("#5.5")
+            depth = cv2.imdecode(dept_np, flags=cv2.IMREAD_GRAYSCALE)
+            print("#5.6")
             depth_scale = 256*depth
+            print("#5.7")
             #カラー画像にする
             depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_scale, alpha=0.03), cv2.COLORMAP_JET)
-
+            print("#6")
             #対象までの距離
             try:
                 target_dist = depth_scale[target_y][target_x] / 1000
-                
+                print("#6.1")
             #対象が検出出来なかった場合の処理
             except:
                 target_dist = 0
                 target_x = int(self.width / 2)
                 target_y = int(self.height / 2)
-
+                print("#6.2")
             #対象の位置を円で囲う
             cv2.circle(depth_colormap, (target_x, target_y), 10, (255, 255, 255), thickness=2)
             cv2.putText(depth_colormap, str(target_dist), (5, 20), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), thickness=2)
-
+            print("#6.3")
             depth_img_flag = True
 
             '''
@@ -477,6 +497,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                 elif target_dist < self.min_dist:
                     self._d_motion_instruct.vx = 0.0
 
+                print("#7")
 
         '''
         画像出力

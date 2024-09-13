@@ -6,6 +6,9 @@ Created on Thu Aug 15 14:27:11 2024
 Re-IDを行うクラスの雛型を作りたい．今後ロボットに搭載できるように書いていきたい
 →過去に作成したクラス(reid.py，reid2.py)は時間計測とか閾値のループとかが入っていて他で使えないので．
 """
+import sys
+sys.path.append(r"C:\Users\ab19109\workspce_robot_reid")
+
 import os
 import os.path as osp
 import glob
@@ -21,6 +24,7 @@ import pprint
 import itertools
 
 import MyTools as myt
+from MyTools import openpose_processor as opp
 import mymodels as mym
 
 
@@ -265,14 +269,19 @@ class ReIDBase:
             #入力画像ごとのループ
             for qidx, (qimg, key) in enumerate(zip(people, keypoints)):
                 print("======")
+                
                 #cv2.imshow("Query", qimg)
                 #cv2.waitKey(0)
                 #print("key > ", key)
                 #入力人物の仮ID
                 temp_id = str(qidx).zfill(3)
+                print("reid #1")
                 temp_id_list.append(temp_id)
-                q_part_images = myt.crop_by_part(qimg, key[0])
+                print("reid #2")
+                q_part_images = opp.make_part_image(qimg, key)
+                print("reid #3")
                 self.query_data[temp_id] = q_part_images
+                print("reid #4")
                 #入力画像と特徴ベクトル間の距離が短い候補画像の位置が入ったリスト
                 index_list = indices[qidx]
                 print("index list > ", index_list)
@@ -281,11 +290,13 @@ class ReIDBase:
                 #候補画像ごとのループ
                 for i, cidx in enumerate(index_list):
                     #print("indices > ", cidx)
-                    
+                    print("reid #5")
                     #候補画像のファイル名
                     cname = self.gname_list[cidx]
+                    print("reid #6")
                     #候補画像のID
                     cid = myt.get_id(self.gname_list[cidx])[0]
+                    print("reid #7")
                     #print("Candidate index >", c_index)
                     #print("Candidate ID> ", self.gid_list[c_index])
                     #print("Candidate name > ", self.gname_list[c_index])                    
@@ -294,6 +305,7 @@ class ReIDBase:
                     #身体部位ごとのループ
                     for part in self.part_list:
                         #print("--- {} ---".format(part))
+                        print("reid #8 part > ", part)
                         try:
                             #cv2.imshow("query {}".format(part), self.query_data[temp_id][part])
                             #cv2.waitKey(0)
@@ -305,7 +317,7 @@ class ReIDBase:
                             #候補画像の身体部位の特徴
                             cpf = self.gallery_part_data[cname][part]
                             #print("#2")
-                            #print("Candidate part feature > ", type(cpf))
+                            print("Candidate {} feature > ".format(part), type(cpf))
                             
                             #ベクトル間の距離計算
                             pdist = myt.calc_euclidean_dist(qpf, cpf)
@@ -316,20 +328,25 @@ class ReIDBase:
                             #print("distance > ", pdist.item())
                         
                         except NotImplementedError:
-                            #print("{} image does not exist".format(part))
-                            #print("query {} > ".format(part), type(self.query_data[temp_id][part]))
+                            print("{} image does not exist".format(part))
+                            print("query {} > ".format(part), type(self.query_data[temp_id][part]))
                             pd_dict[part] = None
                             
                         except ValueError:
-                            #print("Value error")
-                            #print("query {} image: ".format(part), self.query_data[temp_id][part].shape)
+                            print("Value error")
+                            print("query {} image: ".format(part), self.query_data[temp_id][part].shape)
+                            print("candidate {} image: ".format(part), type(cpf))
                             pass
                             
                         except AssertionError:
-                            #print("input for calc_euclidean_dist is not correct")
-                            #print("candidate {} image: ".format(part), type(cpf))
+                            print("input for calc_euclidean_dist is not correct")
+                            print("candidate {} image: ".format(part), type(cpf))
                             pass
-  
+                        
+                        except:
+                            print("other error")
+                            pd_dict[part] = None
+
                     #加重平均計算
                     values = list(pd_dict.values())
                     values = [v for v in values if v != None]
