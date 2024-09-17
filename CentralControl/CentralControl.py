@@ -15,8 +15,10 @@
 import sys
 import time
 from turtle import color
+
 sys.path.append(".")
 sys.path.append(r"C:\Users\ab19109\workspce_robot_reid")
+
 # Import RTM module
 import RTC
 import OpenRTM_aist
@@ -405,7 +407,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             if len(people_list) >= 1:
                 print("#3")
                 #Re-ID実行
-                target_index = self.reid.run_reid(people_list, self.target_id, key_list)
+                target_index = self.reid.run_reid(people_list, color_image, self.target_id, key_list)
                 #target_index: OpenPoseで検出した順番が0埋めの文字列として入っている
                 print("#4")
                 #対象人物が見つからなかった場合
@@ -458,21 +460,15 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         if self._depth_dataIn.isNew():
             print("#5")
             self._d_depth_data = self._depth_dataIn.read()
-            print("#5.1")
             #深度データのByte列
             received_depth = self._d_depth_data.pixels
-            print("#5.2")
             #Decode
             dept_json = json.loads(received_depth)
-            print("#5.3")
             dept_dec = base64.b64decode(dept_json)
-            print("#5.4")
             dept_np = np.frombuffer(dept_dec, dtype='uint8')
-            print("#5.5")
             depth = cv2.imdecode(dept_np, flags=cv2.IMREAD_GRAYSCALE)
-            print("#5.6")
             depth_scale = 256*depth
-            print("#5.7")
+
             #カラー画像にする
             depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_scale, alpha=0.03), cv2.COLORMAP_JET)
             print("#6")
@@ -486,6 +482,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                 target_x = int(self.width / 2)
                 target_y = int(self.height / 2)
                 print("#6.2")
+
             #対象の位置を円で囲う
             cv2.circle(depth_colormap, (target_x, target_y), 10, (255, 255, 255), thickness=3)
             cv2.putText(depth_colormap, str(target_dist), (5, 20), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), thickness=2)
