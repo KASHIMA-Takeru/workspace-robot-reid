@@ -6,9 +6,6 @@ Created on Thu Aug 15 14:27:11 2024
 Re-IDを行うクラスの雛型を作りたい．今後ロボットに搭載できるように書いていきたい
 →過去に作成したクラス(reid.py，reid2.py)は時間計測とか閾値のループとかが入っていて他で使えないので．
 """
-import sys
-sys.path.append(r"C:\Users\ab19109\workspce_robot_reid")
-
 import os
 import os.path as osp
 import glob
@@ -214,13 +211,14 @@ class ReIDBase:
     '''
     Re-IDを行う関数
     '''
-    def run_reid(self, people, target, keypoints):
+    def run_reid(self, people, frame, target, keypoints):
         '''
         Parameters
         ----------
         people : list
             カメラで検出された人物画像のリスト
-
+        frame : np.ndarray
+            カメラ画像
         target: str
             追尾対象のID
         keypoints: list
@@ -266,47 +264,47 @@ class ReIDBase:
             #仮IDのリスト
             temp_id_list = []
             #print("ketpoints > ", keypoints)
+            
             #入力画像ごとのループ
             for qidx, (qimg, key) in enumerate(zip(people, keypoints)):
                 print("======")
                 
                 #cv2.imshow("Query", qimg)
-                #cv2.waitKey(0)
+                #cv2.waitKey(1)
                 #print("key > ", key)
                 #入力人物の仮ID
                 temp_id = str(qidx).zfill(3)
-                print("reid #1")
                 temp_id_list.append(temp_id)
-                print("reid #2")
-                q_part_images = opp.make_part_image(qimg, key)
-                print("reid #3")
+                q_part_images = opp.make_part_image(frame, key)
                 self.query_data[temp_id] = q_part_images
-                print("reid #4")
                 #入力画像と特徴ベクトル間の距離が短い候補画像の位置が入ったリスト
                 index_list = indices[qidx]
-                print("index list > ", index_list)
+                #print("index list > ", index_list)
                 #全ての候補画像の計算結果をいれていくリスト
                 all_dist_list = []
+                #print("pivod dict > ", self.pivod_dict.keys())
+                #print("query data > ", self.query_data[temp_id].keys())
                 #候補画像ごとのループ
                 for i, cidx in enumerate(index_list):
+                    #print("Candidate {} / {}".format(i+1, len(index_list)))
                     #print("indices > ", cidx)
-                    print("reid #5")
+                    
                     #候補画像のファイル名
                     cname = self.gname_list[cidx]
-                    print("reid #6")
+                    print("Name: ", cname)
                     #候補画像のID
                     cid = myt.get_id(self.gname_list[cidx])[0]
-                    print("reid #7")
                     #print("Candidate index >", c_index)
                     #print("Candidate ID> ", self.gid_list[c_index])
                     #print("Candidate name > ", self.gname_list[c_index])                    
                     
                     pd_dict = {}
                     #身体部位ごとのループ
+                    print("Re-ID with part images")
                     for part in self.part_list:
                         #print("--- {} ---".format(part))
-                        print("reid #8 part > ", part)
                         try:
+                            
                             #cv2.imshow("query {}".format(part), self.query_data[temp_id][part])
                             #cv2.waitKey(0)
                             #print("Candidate {} > ".format(part), type(self.gallery_part_data[cname][part]))
@@ -317,43 +315,54 @@ class ReIDBase:
                             #候補画像の身体部位の特徴
                             cpf = self.gallery_part_data[cname][part]
                             #print("#2")
-                            print("Candidate {} feature > ".format(part), type(cpf))
+                            #print("Candidate part feature > ", type(cpf))
                             
                             #ベクトル間の距離計算
                             pdist = myt.calc_euclidean_dist(qpf, cpf)
                             #print("#3")
                             #計算結果を辞書に追加
                             pd_dict[part] = self.pivod_dict[part]['weight'] * pdist.item()
-                            #print("#4")
                             #print("distance > ", pdist.item())
                         
                         except NotImplementedError:
-                            print("{} image does not exist".format(part))
-                            print("query {} > ".format(part), type(self.query_data[temp_id][part]))
+                            #print("Not implemented error")
+                            #print("{} image does not exist".format(part))
+                            #print("query {} > ".format(part), type(self.query_data[temp_id][part]))
                             pd_dict[part] = None
                             
                         except ValueError:
-                            print("Value error")
-                            print("query {} image: ".format(part), self.query_data[temp_id][part].shape)
-                            print("candidate {} image: ".format(part), type(cpf))
-                            pass
+                            #print("Value error")
+                            #print("query {} image: ".format(part), type(self.query_data[temp_id][part]))
+                            #print("shape: ", self.query_data[temp_id][part].shape)
+                            #print("candidate {} image: ".format(part), type(cpf))
+                            
+                            pd_dict[part] = None
+                            #入力画像の部位が正常に切り取られなかったら特徴抽出の段階でここに来る
+                            #→画像の幅か高さが0になる場合がある
+                            #OpenPoseへの入力が人物画像だったのが原因ぽい
                             
                         except AssertionError:
-                            print("input for calc_euclidean_dist is not correct")
-                            print("candidate {} image: ".format(part), type(cpf))
-                            pass
-                        
-                        except:
-                            print("other error")
+                            #print("Assertion error")
+                            #print("input for calc_euclidean_dist is not correct")
+                            #print("candidate {} image: ".format(part), type(cpf))
+                            #候補画像の部位画像が存在しない場合は，ベクトル間の距離計算の段階でここに来る
                             pd_dict[part] = None
-
+                            
+                        except KeyError:
+                            #print("Key error")
+                            #print("{} image of query doesn't exist!".format(part))
+                            #print("keys: ", self.query_data[temp_id].keys())
+                            pd_dict[part] = None
+                            #入力画像の部位画像が存在しない場合は特徴抽出の段階でここに来る
+  
                     #加重平均計算
                     values = list(pd_dict.values())
+                    #print("values > ", values)
                     values = [v for v in values if v != None]
                     
                     factor = np.mean(values)
                     #pprint.pprint(pd_dict)
-                    print("Factor >  {:.3f}".format(factor))
+                    #print("Factor >  {:.3f}".format(factor))
                     all_dist_list.append(factor)
                     
                     #閾値より小さかったら同一人物
@@ -373,6 +382,8 @@ class ReIDBase:
                         
                         break
                     
+                #cv2.destroyWindow("Query")
+                
             print("=== Finish Re-ID ===")
             print("target ID > ", target)
             print("temp ID > ", temp_id_list)

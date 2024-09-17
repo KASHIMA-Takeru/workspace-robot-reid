@@ -24,11 +24,12 @@ import cv2
 OpenPose準備
 '''
 #実行ファイルパス
-#cur_path = osp.dirname(osp.realpath(__file__))
+cur_path = osp.dirname(osp.realpath(__file__))
 #cur_path: C:\Users\ab19109\.spyder-py3\MyTools
 
 #1つ上の階層のパス
-dir_path = r'C:\Users\ab19109\.spyder-py3'
+dir_path = osp.abspath(osp.join(cur_path, os.pardir))
+#dir_path: C:\Users\ab19109\.spyder-py3
 
 #環境変数にOpenPoseのフォルダをパスを追加する
 sys.path.append(dir_path + r'\openpose\build\python\openpose\Release');
@@ -503,8 +504,11 @@ def decide_coordinates(keys, w, h, beta=20):
                         
         
         #顔の位置
-        coordinates['face'] = [face_x0, face_x1, face_y0, face_y1]
+        try:
+            coordinates['face'] = [face_x0, face_x1, face_y0, face_y1]
         
+        except UnboundLocalError:
+            coordinates['face'] = None
     
     '''
     後頭部
@@ -543,8 +547,12 @@ def decide_coordinates(keys, w, h, beta=20):
             
         
         #後頭部の位置
-        coordinates['back_head'] = [backhead_x0, backhead_x1, backhead_y0, backhead_y1]
+        try:
+            coordinates['back_head'] = [backhead_x0, backhead_x1, backhead_y0, backhead_y1]
         
+        except UnboundLocalError:
+            coordinates['back_head'] = None
+            
         
     '''
     胸腹部
@@ -595,10 +603,12 @@ def decide_coordinates(keys, w, h, beta=20):
         chest_y0 = heart[y] - pm*(1405.1 - 1331.0 + beta) 
         chest_y1 = center_waist[y] + pm*beta
 
+        try:
+            coordinates['chest'] = [chest_x0, chest_x1, chest_y0, chest_y1]
         
-        coordinates['chest'] = [chest_x0, chest_x1, chest_y0, chest_y1]
-        
-        
+        except UnboundLocalError:
+            coordinates['chest'] = None
+            
         
     '''
     背部
@@ -648,9 +658,12 @@ def decide_coordinates(keys, w, h, beta=20):
         back_y0 = heart[y] - pm*(1405.1 - 1331.0 + beta) 
         back_y1 = center_waist[y] + pm*beta
 
-        
-        coordinates['back'] = [back_x0, back_x1, back_y0, back_y1]
-        
+        try:
+            coordinates['back'] = [back_x0, back_x1, back_y0, back_y1]
+
+        except UnboundLocalError:
+            coordinates['back'] = None
+            
         
         
     '''
@@ -696,8 +709,12 @@ def decide_coordinates(keys, w, h, beta=20):
             rightarm_y1 = min(h, max(right_shoulder[y], right_elbow[y])+pm*(112.4+beta))
             
             
-        coordinates['right_arm'] = [rightarm_x0, rightarm_x1, rightarm_y0, rightarm_y1]
+        try:
+            coordinates['right_arm'] = [rightarm_x0, rightarm_x1, rightarm_y0, rightarm_y1]
         
+        except UnboundLocalError:
+            coordinates['right_arm'] = None
+            
        
         
     '''
@@ -729,8 +746,12 @@ def decide_coordinates(keys, w, h, beta=20):
         rightwrist_y1 = min(h, right_wrist[y] + pm*(182.6 + beta))
         
             
-        coordinates['right_wrist'] = [rightwrist_x0, rightwrist_x1, rightwrist_y0, rightwrist_y1]
+        try:
+            coordinates['right_wrist'] = [rightwrist_x0, rightwrist_x1, rightwrist_y0, rightwrist_y1]
         
+        except UnboundLocalError:
+            coordinates['right_wrist'] = None
+            
         
     
     '''
@@ -775,10 +796,13 @@ def decide_coordinates(keys, w, h, beta=20):
             leftarm_y0 = max(0, min(left_shoulder[y], left_elbow[y])-pm*(112.4+beta))
             leftarm_y1 = min(h, max(left_shoulder[y], left_elbow[y])+pm*(112.4+beta))
             
-            
-        coordinates['left_arm'] = [leftarm_x0, leftarm_x1, leftarm_y0, leftarm_y1]
         
-       
+        try:
+            coordinates['left_arm'] = [leftarm_x0, leftarm_x1, leftarm_y0, leftarm_y1]
+        
+        except UnboundLocalError:
+            coordinates['left_arm'] = None
+            
         
     '''
     左手首
@@ -809,7 +833,11 @@ def decide_coordinates(keys, w, h, beta=20):
         leftwrist_y1 = min(h, left_wrist[y] + pm*(182.6 + beta))
         
             
-        coordinates['left_wrist'] = [leftwrist_x0, leftwrist_x1, leftwrist_y0, leftwrist_y1]
+        try:
+            coordinates['left_wrist'] = [leftwrist_x0, leftwrist_x1, leftwrist_y0, leftwrist_y1]
+        
+        except UnboundLocalError:
+            coordinates['left_wrist'] = None
         
         
         
@@ -878,8 +906,11 @@ def decide_coordinates(keys, w, h, beta=20):
             leg_y1 = min(h, ankle_y+pm*beta)
             
             
-        coordinates['leg'] = [leg_x0, leg_x1, leg_y0, leg_y1]
+        try:    
+            coordinates['leg'] = [leg_x0, leg_x1, leg_y0, leg_y1]
         
+        except UnboundLocalError:
+            coordinates['leg'] = None
         
         
     '''
@@ -952,10 +983,14 @@ def decide_coordinates(keys, w, h, beta=20):
             rightfoot_y0 = max(0, min(right_ankle[y], right_toe_out[y], right_heel[y])-pm*(79.2+beta))
             rightfoot_y1 = min(h, max(right_ankle[y], right_toe_out[y], right_heel[y])+pm*(79.2+beta))
             
+        
+        try:
+            coordinates['right_foot'] = [rightfoot_x0, rightfoot_x1, rightfoot_y0, rightfoot_y1]
+        
+        except UnboundLocalError:
+            coordinates['right_foot'] = None
             
-        coordinates['right_foot'] = [rightfoot_x0, rightfoot_x1, rightfoot_y0, rightfoot_y1]
-        
-        
+            
             
     '''
     左足
@@ -1028,8 +1063,12 @@ def decide_coordinates(keys, w, h, beta=20):
             leftfoot_y1 = min(h, max(left_ankle[y], left_toe_out[y], left_heel[y])+pm*(79.2+beta))
         
         
-        coordinates['left_foot'] = [leftfoot_x0, leftfoot_x1, leftfoot_y0, leftfoot_y1]
+        try:
+            coordinates['left_foot'] = [leftfoot_x0, leftfoot_x1, leftfoot_y0, leftfoot_y1]
         
+        except UnboundLocalError:
+            coordinates['left_foot'] = None
+            
         
     return coordinates       
     
