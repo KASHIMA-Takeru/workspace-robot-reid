@@ -69,12 +69,12 @@ def build_model(name, num_classes=1, loss='softmax', pretrained=True, use_gpu=Tr
         raise KeyError(
             'Unknown model: {}. Model must be one of {}'.format(name, model_set)
             )
-    
+
     model = model_container[name](
         num_classes = num_classes,
         loss = loss,
         pretained = pretrained,
-        use_gou = use_gpu
+        use_gpu = use_gpu
         )
     
     return model

@@ -133,10 +133,11 @@ class ReIDBase:
         #全身画像を学習したCNNの準備
         model_wholebody = mym.build_model(
             name = self.pivod_dict['wholebody']['model_name'],
+            pretrained = False
             )
         model_wholebody = model_wholebody.cuda()
         model_wholebody.eval()
-        
+        print("built model")
         mym.load_model(model_wholebody, self.pivod_dict['wholebody']['path'])
         self.pivod_dict['wholebody']['model'] = model_wholebody        
         

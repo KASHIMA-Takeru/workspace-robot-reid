@@ -243,7 +243,7 @@ class MakeGallery(OpenRTM_aist.DataFlowComponentBase):
             print("#3")
             #人物画像作成
             bbox_list = opp.make_person_image(image, keypoints=keys)
-            cropped_images = opp.make_part_image(image, keys)
+            cropped_images = opp.make_part_image(image, keypoints=keys)
             print("#4")    
                 
             for i, bbox in enumerate(bbox_list):

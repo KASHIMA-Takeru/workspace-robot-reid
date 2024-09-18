@@ -11,7 +11,6 @@
 
 """
 # </rtc-template>
-
 import sys
 import time
 from turtle import color
@@ -93,7 +92,6 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         #ロボットの動作指令
         self._d_motion_instruct = RTC.TimedVelocity2D(RTC.Time(0,0), RTC.Velocity2D(0.0, 0.0, 0.0))
         self._motion_instructionOut = OpenRTM_aist.OutPort("motion_instruction", self._d_motion_instruct)
-
 
         '''
         Re-IDに用いるものたち

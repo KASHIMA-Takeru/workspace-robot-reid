@@ -23,13 +23,7 @@ import cv2
 '''
 OpenPose準備
 '''
-#実行ファイルパス
-cur_path = osp.dirname(osp.realpath(__file__))
-#cur_path: C:\Users\ab19109\.spyder-py3\MyTools
-
-#1つ上の階層のパス
-dir_path = osp.abspath(osp.join(cur_path, os.pardir))
-#dir_path: C:\Users\ab19109\.spyder-py3
+dir_path = r'C:\Users\ab19109\.spyder-py3'
 
 #環境変数にOpenPoseのフォルダをパスを追加する
 sys.path.append(dir_path + r'\openpose\build\python\openpose\Release');
@@ -1095,13 +1089,13 @@ def make_part_image(image: np.ndarray, keypoints: np.ndarray or None):
     #キーポイントが検出されてなければ検出
     if type(keypoints) == None:
         keypoints = detect_keypoints(image)
-        
+
     #画像の高さと幅
     h, w, _ = image.shape
-    
+
     #部位ごとに切り取る位置を決める
-    coordinates = decide_coordinates(keypoints, w, h)
-    
+    coordinates = decide_coordinates(keypoints[0], w, h)
+
     #切り取った画像を入れていく辞書
     part_images = {}
     #身体部位ごとのループ
@@ -1111,11 +1105,12 @@ def make_part_image(image: np.ndarray, keypoints: np.ndarray or None):
             #身体部位の領域が小さかったらその部位の画像は作成しない．
             if coordinates[part][3] - coordinates[part][2] < 30 and coordinates[part][1] - coordinates[part][0] < 30:
                 part_images[part] = None
-                
+
             else:
                 part_images[part] = image[round(coordinates[part][2]): round(coordinates[part][3]), \
                                            round(coordinates[part][0]): round(coordinates[part][1])]
-        
+
+
         except TypeError:
             continue
             
