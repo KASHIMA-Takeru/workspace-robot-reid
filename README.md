@@ -10,7 +10,7 @@ pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --e
 ```
 
 
-## OpenPoseの準備(Windows)
+## OpenPoseの準備(Windows) * 編集中
 [OpenPoseドキュメント](https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/doc/installation/0_index.md#compiling-and-running-openpose-from-source)
 ### Clone OpenPose
 1. Windows Powershellを起動し，以下のコマンドでGithubにあるOpenPoseのリポジトリをクローンする．
