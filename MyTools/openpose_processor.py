@@ -18,12 +18,16 @@ import numpy as np
 import math as m
 import cv2
 
+import ctypes
 
 
 '''
 OpenPose準備
 '''
 dir_path = r'C:\Users\ab19109\.spyder-py3'
+
+#DLLファイルの呼び出し(import pyopenposeでDLL Load failedが出るようになったので追記)
+ctypes.cdll.LoadLibrary(osp.join(dir_path, r'openpose\build\x64\Release\openpose.dll'))
 
 #環境変数にOpenPoseのフォルダをパスを追加する
 sys.path.append(dir_path + r'\openpose\build\python\openpose\Release');

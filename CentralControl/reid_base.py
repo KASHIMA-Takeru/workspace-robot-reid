@@ -409,10 +409,10 @@ class ReIDBase:
                 
             #入力人物の中に追尾対象がいなかった場合
             elif target not in pid_list:
-                target_person = 'not_exist'
+                target_person = -1
                     
             
-            return target_person
+            return target_person, pid_list
 
 
 

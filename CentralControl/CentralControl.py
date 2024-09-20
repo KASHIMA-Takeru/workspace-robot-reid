@@ -212,6 +212,9 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         self.height = 480
         self.width = 640
         
+        #色の定義
+        self.BLUE = (255, 0, 0)
+        self.GREEN = (0, 255, 0)
 
 
         # initialize of configuration-data.
@@ -405,9 +408,46 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             if len(people_list) >= 1:
                 print("#3")
                 #Re-ID実行
-                target_index = self.reid.run_reid(people_list, color_image, self.target_id, key_list)
-                #target_index: OpenPoseで検出した順番が0埋めの文字列として入っている
+                target_index, pid_list = self.reid.run_reid(people_list, color_image, self.target_id, key_list)
+                #target_index: OpenPoseで検出した順番が0埋めの文字列として入っている．追尾対象がいないと判断された場合は-1が入っている．
                 print("#4")
+                target_index = int(target_index)
+                #追尾対象が見つかった場合
+                if target_index > 0:
+                    #追尾の基準点として対象の心臓部を丸で囲う
+                    target_point = key_list[target_index][1]
+                    #追尾対象の心臓部のx, y座標
+                    target_x = int(target_point[0])
+                    target_y = int(tatget_point[1])
+
+                    cv2.circle(keyimage, (target_x, target_y), 25, self.BLUE, thickness=3)
+
+                    #ロボットへの指令
+                    #基準点がカメラ画角の中央より左側にある場合
+                    if target_x < 220:
+                        self._d_motion_instruct.va = self.va
+
+                    #基準点が画角中心より右側にある場合
+                    elif target_x > 420:
+                        self._d_motion_instruct.va = -1 * self.va
+
+                    else:
+                        self._d_motion_instruct.va = 0
+                        
+                #検出された人物を四角で囲う．人物領域ごとのループ
+                for i, (target_box, pid) in enumerate(zip(bbox_list, pid_list)):
+                    #人物を囲う色．追尾対象なら青で他の人は緑
+                    color = self.BLUE if i == target_index else self.GREEN
+                    #線の太さ
+                    thickness = 3 if i == target_index else 2
+
+                    #指定した色と太さで人物を囲う
+                    cv2.rectangle(keyimage, (target_box[2], target_box[0]), (target_box[3], target_box[1]), color, thickness=thickness)
+                    #枠の左上にIDを表示する．
+                    cv2.putText(keyimage, pid, (target_box[2], target_box[0]), cv2.FONT_HERSHEY_PLAIN, 3, color, thickness=thickness)
+
+
+                '''
                 #対象人物が見つからなかった場合
                 if target_index == 'not_exist':
                     print("Lost target")
@@ -449,6 +489,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                     else:
                         self._d_motion_instruct.va = 0.0
                         print("#4.4")
+                '''
             color_img_flag = True
 
 
