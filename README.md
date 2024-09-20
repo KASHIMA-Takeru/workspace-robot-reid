@@ -79,3 +79,8 @@ cmake-gui..
 
 11. ウィンドウ下部に`Generating done`と表示されたら`Open Project`をクリックする．
 
+
+## References
+> [OpenPose: Realtime Multi-Person 2D Pose Estimation using Psrt Affinity Fields](https://arxiv.org/abs/1812.08008)
+> Z. Cao, G. Hidalgo Martinez, T. Simon S. Wei Y. A. Sheikh
+> 2019 IEEE Transactions on Pattern Analysis and Machine Intelligence
