@@ -418,7 +418,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                     target_point = key_list[target_index][1]
                     #追尾対象の心臓部のx, y座標
                     target_x = int(target_point[0])
-                    target_y = int(tatget_point[1])
+                    target_y = int(target_point[1])
 
                     cv2.circle(keyimage, (target_x, target_y), 25, self.BLUE, thickness=3)
 
