@@ -1,16 +1,15 @@
 ﻿# CentralControl
 
 ## Overview
-
-operate Re-ID and robot control
+Intel RealSense D455を用いたRe-IDとロボットの制御を行うプログラム
 
 ## Description
 
 
 
 ### Input and Output
-
-
+Input: RealSenseのカラー画像と深度データ．
+Output: ロボットへの動作指令．正面方向への移動速度と回転速度と方向．
 
 ### Algorithm etc
 
