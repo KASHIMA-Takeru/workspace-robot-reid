@@ -3,7 +3,7 @@ Re-IDを用いた移動ロボットの制御
 
 ## Pythonの準備
 1. Python3.9をインストールする．その他のバージョンでの動作確認は未実施．
-2. CUDA Toolkit をインストールする．詳細な手順は未調査．
+2. CUDA Toolkit をインストールする．
 3. [PyTorchドキュメント](https://pytorch.org/get-started/previous-versions)を参考に，PyTorch1.11.0+cu113をインストールする．
 ```console
 pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu113
