@@ -9,6 +9,10 @@ Re-IDを用いた移動ロボットの制御
 pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu113
 ```
 
+`[WinError 5] アクセスが拒否されました`となった場合は，以下のように末尾に`-- user`と追記する．
+```console
+pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu113 -- user
+```
 
 ## OpenPoseの準備(Windows) * 編集中
 [OpenPoseドキュメント](https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/doc/installation/0_index.md#compiling-and-running-openpose-from-source)
