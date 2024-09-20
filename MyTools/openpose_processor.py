@@ -28,7 +28,7 @@ dir_path = r'C:\Users\ab19109\.spyder-py3'
 #環境変数にOpenPoseのフォルダをパスを追加する
 sys.path.append(dir_path + r'\openpose\build\python\openpose\Release');
 os.environ['PATH'] = os.environ['PATH'] + ';' + dir_path + r'\openpose\build\x64\Release;' + \
-    dir_path + r'\.spyder-py3\openpose\build\bin;'
+    dir_path + r'\openpose\build\bin;'
 
 import pyopenpose as op
 
