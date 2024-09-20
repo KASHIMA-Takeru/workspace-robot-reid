@@ -1,10 +1,31 @@
 # workspace-robot-reid
 Re-IDを用いた移動ロボットの制御
 
+## CUDA Toolkit, cuDNNの準備
+### CUDA Toolkitのインストール
+1. [NVIDIA公式ドライバーのダウンロードページ](https://www.nvidia.com/ja-jp/drivers/)で自分が使用しているGPUに合ったドライバーをダウンロードする．
+2. ダウンロードされたexeファイルを開き，指示に従ってインストールを進める．
+3. [CUDA Toolkitのダウンロードページ](https://developer.nvidia.com/cuda-toolkit-archive)で目的のバージョンを探しクリックする．
+4. OSやバージョンなどを選択し，表示された`> Base Installer`の`Download`をクリックする．
+5. ダウンロードされたexeファイルを開き，指示に従ってインストールを進める．
+
+### cuDNNのインストール
+1. [ダウンロードページ](https://developer.nvidia.com/rdp/cudnn-archive)でバージョンを選択する．
+2. ダウンロードされたexeファイルを開き，指示に従ってインストールを進める．
+
+### 環境変数の設定
+CUDA ToolkitとcuDNNのインストールが完了したら，環境変数を設定する必要がある．ここでは，CUDA Toolkitのバージョン11.3を例に説明する．
+1. デスクトップ画面左下の検索ウィンドウに`環境変数`と入力し，`環境変数を編集`を開く．
+2. ユーザー環境変数の`新規`をクリックする．
+3. `変数名`にCUDA_PATH，`変数値`に`C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.3`を入力する．このとき，末尾のv11.3はインストールされているバージョンを表しているので，異なるバージョンをインストールした場合は正しいバージョンにする．実際は`C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA`の下にインストールされたバージョンのフォルダが存在しているので，そのフォルダのパスをそのままコピーすればよい．
+4. `OK`をクリックして環境変数を登録する．
+5. 再び`新規`をクリックする．
+6. 今度は`変数名`に`CUDNN_PATH`を入力し，`変数名`はCUDA_PATHの値と同じものにして`OK`をクリックし登録する．
+7. ユーザーの環境変数の一覧に登録した2つの変数があることを確認し右下の`OK`をクリックする．
+
 ## Pythonの準備
 1. Python3.9をインストールする．その他のバージョンでの動作確認は未実施．
-2. CUDA Toolkit をインストールする．
-3. [PyTorchドキュメント](https://pytorch.org/get-started/previous-versions)を参考に，PyTorch1.11.0+cu113をインストールする．
+2. [PyTorchドキュメント](https://pytorch.org/get-started/previous-versions)を参考に，PyTorch1.11.0+cu113をインストールする．
 ```console
 pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu113
 ```
