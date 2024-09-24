@@ -25,7 +25,7 @@ CUDA ToolkitとcuDNNのインストールが完了したら，環境変数を設
 
 ## Pythonの準備
 1. Python3.9をインストールする．その他のバージョンでの動作確認は未実施．
-2. [PyTorchドキュメント](https://pytorch.org/get-started/previous-versions)を参考に，PyTorch1.11.0+cu113をインストールする．
+2. [PyTorchドキュメント](https://pytorch.org/get-started/previous-versions)を参考にPyTorchをインストールする．下のコマンドでは，PyTorch1.11.0+cu113をインストールしている．
 ```console
 pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu113
 ```
