@@ -83,7 +83,7 @@ def detect_keypoints(image: np.ndarray)-> np.ndarray:
 カメラ画像から人物領域の画像を作成する関数
 複数人写っている場合はそれぞれの画像を作成する
 '''
-def make_person_image(image: np.ndarray, keypoints: np.ndarray or None, thrs = 0.1, ex_len = 100):
+def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 100):
     '''
     Parameters
     ----------
@@ -1074,7 +1074,7 @@ def decide_coordinates(keys, w, h, beta=20):
 '''
 身体部位画像を作成する関数
 '''
-def make_part_image(image: np.ndarray, keypoints: np.ndarray or None):
+def make_part_image(image: np.ndarray, keypoints):
     '''
     Parameters
     ----------
@@ -1093,12 +1093,12 @@ def make_part_image(image: np.ndarray, keypoints: np.ndarray or None):
     #キーポイントが検出されてなければ検出
     if type(keypoints) == None:
         keypoints = detect_keypoints(image)
-
+    #print("keypoints > ", keypoints)
     #画像の高さと幅
     h, w, _ = image.shape
-
+    #print("keypoints[0] > ", keypoints[0])
     #部位ごとに切り取る位置を決める
-    coordinates = decide_coordinates(keypoints[0], w, h)
+    coordinates = decide_coordinates(keypoints, w, h)
 
     #切り取った画像を入れていく辞書
     part_images = {}

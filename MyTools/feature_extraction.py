@@ -108,7 +108,7 @@ def feature_extractor(model, image, image_size):
     features : Tensor
         画像の特徴ベクトル
     '''
-
+    #print("Feature Extractor")
     
     '''
     パラメータ類
@@ -117,13 +117,13 @@ def feature_extractor(model, image, image_size):
     pixel_std = [0.229, 0.224, 0.225]
     pixel_norm = True
     device = 'cuda'
-    
+    #print("fe#1")
     
     #transform関数の作成    
     transforms = []
     transforms += [T.Resize(image_size)]
     transforms += [T.ToTensor()]  
-    
+    #print("fe#2")
     if pixel_norm:
         transforms += [T.Normalize(mean=pixel_mean, std=pixel_std)]
     
@@ -133,20 +133,24 @@ def feature_extractor(model, image, image_size):
     
     device = torch.device(device)
     model.to(device)
+    #print("fe#3")
     
     '''
     前準備
     '''
     if isinstance(image, list):
+        #print("fe#4")
         images = []
-        
+        print("image > ", image)
         for element in image:
             if isinstance(element, str):
+                #print("fe#4.1")
                 image = Image.open(element).convert('RGB')
                 
             elif isinstance(element, np.ndarray):
+                #print("fe#4.2")
                 image = to_pil(element)
-                
+                #print("fe#4.3")
             else:
                 raise TypeError(
                     "Type of each element must be belong to [str | numpy.ndarray]"
@@ -164,6 +168,7 @@ def feature_extractor(model, image, image_size):
         images = image.unsqueeze(0).to(device)
         
     elif isinstance(image, np.ndarray):
+        #print("fe#5")
         image = to_pil(image)
         image = preprocess(image)
         images = image.unsqueeze(0).to(device)
@@ -180,7 +185,9 @@ def feature_extractor(model, image, image_size):
     '''
     特徴抽出
     '''
+    #print("fe#6")
     with torch.no_grad():
         features = model(images)
-        
+        #print("fe#7")
+
     return features

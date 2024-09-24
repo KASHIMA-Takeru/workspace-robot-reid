@@ -178,12 +178,15 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
 
         #同一人物か異なる人物かを判断する閾値
         self.thrs = 250
+        #探索する最大人数
+        self.maxk = 10
+      
         #追尾対象のID
         self.target_id = '001'
         #保存フォルダ
         self.save_folder = r'D:\master_research\Robot\tracking_test'
         #検索データの保存先
-        self.gallery_folder = r'D:\master_research\Robot\gallery_storage'
+        self.gallery_folder = r'D:\master_research\Robot\gallery_storage\0920'
 
 
         '''
@@ -255,7 +258,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             save_dir = self.save_folder,
             use_part = True,
             thrs = self.thrs,
-            maxk = 20
+            maxk = self.maxk
             )
 
         #Re-ID準備
@@ -320,7 +323,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         os.makedirs(self.save_path, exist_ok=True)
 
         #画像表示用ウィンドウ
-        cv2.namedWindow("Image", cv2.WINDOW_NORMAL)
+        cv2.namedWindow("Image", cv2.WINDOW_AUTOSIZE)
 
         #動画ライター準備
         #カラー画像と深度画像を横並びにするため幅は2倍
@@ -388,51 +391,64 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
 
             #OpenPoseで人物検出
             key_list, keyimage = opp.detect_keypoints(color_image)
+            print("#1.1")
             #key_list: 検出された人物のキーポイントの座標が入った配列．
             #key_image: キーポイント間を線で結んだ画像
             
-            bbox_list = opp.make_person_image(color_image, key_list)
-            #bbox_list: 人物領域の四隅の座標が入ったリスト
+            #人物が検出された場合
+            if type(key_list) == np.ndarray:
+                bbox_list = opp.make_person_image(image=color_image, keypoints=key_list)
+                #bbox_list: 人物領域の四隅の座標が入ったリスト
+                print("#1.2")
 
-            #人物画像作成
-            people_list = []
-            for (top, bottom, left, right) in bbox_list:
-                person = color_image[top: bottom, left: right]
-                people_list.append(person)
+                #人物画像作成
+                people_list = []
+                for (top, bottom, left, right) in bbox_list:
+                    person = color_image[top: bottom, left: right]
+                    people_list.append(person)
 
             print("#2")
             #画像の左上に対象人物のIDを書いておく
-            cv2.putTet(keyimage, 'Target: {}'.format(self.target_id), (0, 50), cv2.FONT_HERSHEY_PLAIN, 3, (255, 0, 0), thickness=5)
-
+            cv2.putText(keyimage, 'Target: {}'.format(self.target_id), (5, 20), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), thickness=3)
+            print("#2.1")
+            '''
+            エラー事情
+            キーポイントが検出された＝人物が検出された　ではないがプログラム上では=扱いになっているかも．
+            そのため，人物画像が作成されなかったにも関らずRe-IDが実行され特徴抽出の段階でエラーになっている．
+            '''
             #人物が検出された場合
-            if len(people_list) >= 1:
+            if type(key_list) == np.ndarray:
                 print("#3")
+                print("People: ", len(people_list))
                 #Re-ID実行
                 target_index, pid_list = self.reid.run_reid(people_list, color_image, self.target_id, key_list)
                 #target_index: OpenPoseで検出した順番が0埋めの文字列として入っている．追尾対象がいないと判断された場合は-1が入っている．
                 print("#4")
                 target_index = int(target_index)
                 #追尾対象が見つかった場合
-                if target_index > 0:
+                if target_index != 'Not_exist':
+                    person_flag = True
                     #追尾の基準点として対象の心臓部を丸で囲う
                     target_point = key_list[target_index][1]
                     #追尾対象の心臓部のx, y座標
                     target_x = int(target_point[0])
                     target_y = int(target_point[1])
+                    print("target x > ", target_x)
+                    print("target y > ", target_y)
 
-                    cv2.circle(keyimage, (target_x, target_y), 25, self.BLUE, thickness=3)
+                    cv2.circle(keyimage, (target_x, target_y), 10, self.BLUE, thickness=3)
 
                     #ロボットへの指令
                     #基準点がカメラ画角の中央より左側にある場合
                     if target_x < 220:
-                        self._d_motion_instruct.va = self.va
+                        self._d_motion_instruct.data.va = self.va
 
                     #基準点が画角中心より右側にある場合
                     elif target_x > 420:
-                        self._d_motion_instruct.va = -1 * self.va
+                        self._d_motion_instruct.data.va = -1 * self.va
 
                     else:
-                        self._d_motion_instruct.va = 0
+                        self._d_motion_instruct.data.va = 0
                         
                 #検出された人物を四角で囲う．人物領域ごとのループ
                 for i, (target_box, pid) in enumerate(zip(bbox_list, pid_list)):
@@ -444,8 +460,10 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                     #指定した色と太さで人物を囲う
                     cv2.rectangle(keyimage, (target_box[2], target_box[0]), (target_box[3], target_box[1]), color, thickness=thickness)
                     #枠の左上にIDを表示する．
-                    cv2.putText(keyimage, pid, (target_box[2], target_box[0]), cv2.FONT_HERSHEY_PLAIN, 3, color, thickness=thickness)
+                    cv2.putText(keyimage, pid, (target_box[2], target_box[0]), cv2.FONT_HERSHEY_PLAIN, 2, color, thickness=thickness)
 
+            else:
+                cv2.circle(keyimage, (int(self.width/2), int(self.height/2)), 10, self.BLUE, thickness=3)
 
                 '''
                 #対象人物が見つからなかった場合
@@ -534,43 +552,45 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             if person_flag:
                 #対象まで充分な距離がある
                 if target_dist > self.slow_dist[0]:
-                    self._d_motion_instruct.vx = self.normal_speed
+                    self._d_motion_instruct.data.vx = self.normal_speed
 
                 #対象に少し近い場合
                 elif (target_dist < self.slow_dist[0]) and (target_dist > self.slow_dist[1]):
-                    self._d_motion_instruct.vx = self.slow_speeds[0]
+                    self._d_motion_instruct.data.vx = self.slow_speeds[0]
 
                 #更に近い場合
                 elif (target_dist < self.slow_dist[1]) and (target_dist > self.min_dist):
-                    self._d_motion_instruct.vx = self.slow_speeds[1]
+                    self._d_motion_instruct.data.vx = self.slow_speeds[1]
 
                 #近づきすぎた場合
                 elif target_dist < self.min_dist:
-                    self._d_motion_instruct.vx = 0.0
+                    self._d_motion_instruct.data.vx = 0.0
 
                 print("#7")
 
         '''
         画像出力
         '''
+        print("#8")
         if color_img_flag and depth_img_flag:
             key_image_dim = keyimage.shape
             depth_map_dim = depth_colormap.shape
-
+            print("#8.1")
             #カラー画像と深度画像を横並びにする
             if key_image_dim != depth_map_dim:
                 resized_keyimage = cv2.resize(keyimage, dsize=(depth_map_dim[1], depth_map_dim[0]), interpolation=cv2.INTER_AREA)
                 images = np.hstack((resized_keyimage, depth_colormap))
-
+                print("#8.2")
             else:
-                images = np.htack((keyimage, depth_colormap))
+                images = np.hstack((keyimage, depth_colormap))
+                print("#8.3")
 
             cv2.imshow("Image", images)
             cv2.waitKey(1)
 
             self.writer.write(images)
 
-
+        print("Motion > ", self._d_motion_instruct)
         self._motion_instructionOut.write()
 
 

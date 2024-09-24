@@ -232,18 +232,19 @@ class ReIDBase:
             それとtarget_personを照らし合わせることで，画像中のどこに追尾対象がいるかを判断する予定
 
         '''
-        
+        print("Run Re-ID")
         #全身画像をCNNに入力して特徴ベクトル抽出
         qfs = myt.feature_extractor(self.pivod_dict['wholebody']['model'], people, self.pivod_dict['wholebody']['size'])
-        
+        print("reid#1")
         #特徴ベクトル間の距離計算
         distmat = myt.calc_euclidean_dist(qfs, self.gf_list).cpu()
-     
+        print("reid#2")
         #print("distmat > ", distmat)
         
         #ベクトル間の距離の順位
         indices = np.argsort(distmat.cpu(), axis=1)
         indices = np.asarray(indices)
+        print("reid#3")
         #print("indices > ", indices)
         #距離が最短の画像の位置
         min_pos = [np.argmin(dist).item() for dist in distmat]
@@ -269,17 +270,19 @@ class ReIDBase:
             #入力画像ごとのループ
             for qidx, (qimg, key) in enumerate(zip(people, keypoints)):
                 print("======")
-                
                 #cv2.imshow("Query", qimg)
                 #cv2.waitKey(1)
                 #print("key > ", key)
                 #入力人物の仮ID
                 temp_id = str(qidx).zfill(3)
                 temp_id_list.append(temp_id)
+                print("reid#4")
                 q_part_images = opp.make_part_image(frame, key)
+                print("reied#5")
                 self.query_data[temp_id] = q_part_images
                 #入力画像と特徴ベクトル間の距離が短い候補画像の位置が入ったリスト
                 index_list = indices[qidx]
+                print("reid#6")
                 #print("index list > ", index_list)
                 #全ての候補画像の計算結果をいれていくリスト
                 all_dist_list = []
@@ -373,6 +376,7 @@ class ReIDBase:
                         factor_list.append(factor)
                         break
                     
+
                     #探索する最大人数を超えた場合
                     if i > self.maxk:
                         print("Could not detect person")
@@ -380,7 +384,8 @@ class ReIDBase:
                         min_index = all_dist_list.index(min(all_dist_list))
                         cid = (self.gid_list[min_index])
                         pid_list.append(cid)
-                        
+                        factor_list.append(factor)
+
                         break
                     
                 #cv2.destroyWindow("Query")
@@ -409,7 +414,7 @@ class ReIDBase:
                 
             #入力人物の中に追尾対象がいなかった場合
             elif target not in pid_list:
-                target_person = -1
+                target_person = 'Not_exist'
                     
             
             return target_person, pid_list
