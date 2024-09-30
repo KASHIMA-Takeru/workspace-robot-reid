@@ -77,7 +77,14 @@ cmake-gui..
 ![git_openpose_cmake_python_version](https://github.com/user-attachments/assets/a5ffd9b5-17af-463b-8b15-fc8b00d87184)
 ![git_openpose_cmake_generating](https://github.com/user-attachments/assets/77192421-463c-4469-8729-01fa04e23dde)
 
-11. ウィンドウ下部に`Generating done`と表示されたら`Open Project`をクリックする．
+11. ウィンドウ下部に`Generating done`と表示されたら`Open Project`をクリックしてVisual Studioを起動する．
+12. Visual Studioが開いたら，上部のシステム構成を`Debug`から`Release`に変更する．
+
+![release](https://github.com/user-attachments/assets/a6b5f134-e0c3-4fc1-aebb-5dacbb21107a)
+
+13．`ビルド`のタブをクリックし，`ソリューションのビルド`をクリックしてビルドする．
+
+![build_solution](https://github.com/user-attachments/assets/be9ba9dd-87a8-42c0-9eb9-f153abae6f65)
 
 
 ## References
