@@ -35,7 +35,7 @@ pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --e
 pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu113 -- user
 ```
 
-## OpenPoseの準備(Windows) * 編集中
+## OpenPoseの準備(Windows)
 [OpenPoseドキュメント](https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/doc/installation/0_index.md#compiling-and-running-openpose-from-source)
 ### Clone OpenPose
 1. Windows Powershellを起動し，以下のコマンドでGithubにあるOpenPoseのリポジトリをクローンする．
@@ -86,6 +86,46 @@ cmake-gui..
 
 ![build_solution](https://github.com/user-attachments/assets/be9ba9dd-87a8-42c0-9eb9-f153abae6f65)
 
+## OpenPoseの使い方
+ここでは，OpenPoseをPythonプログラム内の使用方法について記述する．
+
+### pyopenposeのインポート~OpenPoseの準備
+
+```console
+import sys
+import os
+import os.path as osp
+
+#OpenPoseのフォルダのパス
+dir_path = r'../../..'
+
+#importするモジュールの対象にOpenPoseのフォルダを追加する
+sys.path.append(dir_path + r'\openpose\build\python\openpose\Release');
+#環境変数にOpenPosenoパスを追加
+os.environ['PATH'] = os.environ['PATH'] + ';' + dir_path + r'\openpose\build\x64\Release;' + \
+    dir_path + r'openpose\build\bin;'
+
+import pyopenpose as op
+
+#Custom Params
+params = dict()
+params["model_folder"] = osp.join(dir_path, r'openpose\models')
+
+#Start OpenPose
+opWrapper = op.WrapperPython()
+opWrapper.configure(params)
+opWrapper.start()
+
+datum = op.Datum()
+```
+
+`ImportError: DLL Load Failed: 指定されたモジュールが見つかりません`というエラーが出た場合は，`import pyopenpose as op`の前に次のコードを追記する．
+
+```console
+import ctypes
+
+ctypes.cdll.LoadLibrary(osp.join(dir_path, r'openpose\build\x64\Release\openpose.dll'))
+```
 
 ## References
 > [OpenPose: Realtime Multi-Person 2D Pose Estimation using Psrt Affinity Fields](https://arxiv.org/abs/1812.08008)
