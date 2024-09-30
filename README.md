@@ -127,6 +127,30 @@ import ctypes
 ctypes.cdll.LoadLibrary(osp.join(dir_path, r'openpose\build\x64\Release\openpose.dll'))
 ```
 
+### OpenPoseによるキーポイントの検出
+画像内の人物の関節等(=キーポイント)を検出し，それらの座標値およびキーポイントを結んだ画像を取得する．
+
+```console
+import cv2
+
+~~
+import pyopenpose as op
+~~
+datum = op.Datum()
+
+#入力画像
+image = cv2.imread('sample.jpg')
+
+datum.cvInputData = image
+opWrapper.emplaceAndPop(op.VectorDatum([datum]))
+
+#検出結果
+#検出したキーポイントの座標
+keypoints = datum.poseKeypoints
+#キーポイントを点で表示し，隣り合うキーポイントを線で結んだ画像
+keyimage = datum.cvOutputData
+```
+
 ## References
 > [OpenPose: Realtime Multi-Person 2D Pose Estimation using Psrt Affinity Fields](https://arxiv.org/abs/1812.08008)
 > Z. Cao, G. Hidalgo Martinez, T. Simon S. Wei Y. A. Sheikh
