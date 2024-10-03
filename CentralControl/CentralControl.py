@@ -397,7 +397,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             
             #人物が検出された場合
             if type(key_list) == np.ndarray:
-                bbox_list = opp.make_person_image(image=color_image, keypoints=key_list)
+                bbox_list, person_flag = opp.make_person_image(image=color_image, keypoints=key_list)
                 #bbox_list: 人物領域の四隅の座標が入ったリスト
                 print("#1.2")
 
@@ -411,13 +411,9 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             #画像の左上に対象人物のIDを書いておく
             cv2.putText(keyimage, 'Target: {}'.format(self.target_id), (5, 20), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), thickness=3)
             print("#2.1")
-            '''
-            エラー事情
-            キーポイントが検出された＝人物が検出された　ではないがプログラム上では=扱いになっているかも．
-            そのため，人物画像が作成されなかったにも関らずRe-IDが実行され特徴抽出の段階でエラーになっている．
-            '''
-            #人物が検出された場合
-            if type(key_list) == np.ndarray:
+
+            #人物画像が作成された場合
+            if person_flag:
                 print("#3")
                 print("People: ", len(people_list))
                 #Re-ID実行

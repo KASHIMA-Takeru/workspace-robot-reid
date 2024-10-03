@@ -96,7 +96,8 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 100):
     -------
     bbox_list: list
         人物領域の４隅の座標が入ったリスト
-        
+    person_flag: bool
+        人物画像が作成されたかの印
         
     Example:
         
@@ -111,6 +112,8 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 100):
     #人物領域の4隅の座標を入れていくリスト(人物画像を入れると処理が重くなりそう?)
     bbox_list = []
     
+    #人物画像が作成されたかの印
+    person_flag = False
     
     #keypointsがNoneならキーポイント検出
     if type(keypoints) == np.ndarray:
@@ -191,9 +194,9 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 100):
         
         else:
             bbox_list.append([top, bottom, left, right])
+            person_flag = True
             
-            
-    return bbox_list
+    return bbox_list, person_flag
 
 
 '''
