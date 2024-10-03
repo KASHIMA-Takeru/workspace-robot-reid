@@ -141,7 +141,7 @@ def feature_extractor(model, image, image_size):
     if isinstance(image, list):
         #print("fe#4")
         images = []
-        print("image > ", image)
+        #print("image > ", image)
         for element in image:
             if isinstance(element, str):
                 #print("fe#4.1")

@@ -232,19 +232,19 @@ class ReIDBase:
             それとtarget_personを照らし合わせることで，画像中のどこに追尾対象がいるかを判断する予定
 
         '''
-        print("Run Re-ID")
+        #print("Run Re-ID")
         #全身画像をCNNに入力して特徴ベクトル抽出
         qfs = myt.feature_extractor(self.pivod_dict['wholebody']['model'], people, self.pivod_dict['wholebody']['size'])
-        print("reid#1")
+        #print("reid#1")
         #特徴ベクトル間の距離計算
         distmat = myt.calc_euclidean_dist(qfs, self.gf_list).cpu()
-        print("reid#2")
+        #print("reid#2")
         #print("distmat > ", distmat)
         
         #ベクトル間の距離の順位
         indices = np.argsort(distmat.cpu(), axis=1)
         indices = np.asarray(indices)
-        print("reid#3")
+        #print("reid#3")
         #print("indices > ", indices)
         #距離が最短の画像の位置
         min_pos = [np.argmin(dist).item() for dist in distmat]
@@ -252,8 +252,8 @@ class ReIDBase:
         
         #距離が最短だった検索データのID取得
         cids = [self.gid_list[j] for j in min_pos]
-        print("candidate IDs > ", cids)
-        print("indices > ", indices)
+        #print("candidate IDs > ", cids)
+        #print("indices > ", indices)
         #print("type > ", type(indices))
         #print("shape > ", indices.shape)
         #print("0 > ", indices[0])
@@ -269,20 +269,20 @@ class ReIDBase:
             
             #入力画像ごとのループ
             for qidx, (qimg, key) in enumerate(zip(people, keypoints)):
-                print("======")
+                #print("======")
                 #cv2.imshow("Query", qimg)
                 #cv2.waitKey(1)
                 #print("key > ", key)
                 #入力人物の仮ID
                 temp_id = str(qidx).zfill(3)
                 temp_id_list.append(temp_id)
-                print("reid#4")
+                #print("reid#4")
                 q_part_images = opp.make_part_image(frame, key)
-                print("reied#5")
+                #print("reied#5")
                 self.query_data[temp_id] = q_part_images
                 #入力画像と特徴ベクトル間の距離が短い候補画像の位置が入ったリスト
                 index_list = indices[qidx]
-                print("reid#6")
+                #print("reid#6")
                 #print("index list > ", index_list)
                 #全ての候補画像の計算結果をいれていくリスト
                 all_dist_list = []
@@ -295,7 +295,7 @@ class ReIDBase:
                     
                     #候補画像のファイル名
                     cname = self.gname_list[cidx]
-                    print("Name: ", cname)
+                    #print("Name: ", cname)
                     #候補画像のID
                     cid = myt.get_id(self.gname_list[cidx])[0]
                     #print("Candidate index >", c_index)
@@ -304,7 +304,7 @@ class ReIDBase:
                     
                     pd_dict = {}
                     #身体部位ごとのループ
-                    print("Re-ID with part images")
+                    #print("Re-ID with part images")
                     for part in self.part_list:
                         #print("--- {} ---".format(part))
                         try:
@@ -371,15 +371,19 @@ class ReIDBase:
                     
                     #閾値より小さかったら同一人物
                     if self.thrs > factor:
-                        print("{} was Detected as {}".format(temp_id, cid))
+                        #print("{} was Detected as {}".format(temp_id, cid))
                         pid_list.append(cid)
                         factor_list.append(factor)
                         break
+
+                    else:
+                        all_dist_list.append(factor)
+                        #print("Detected as different person. Factor: ", factor)
                     
 
-                    #探索する最大人数を超えた場合
-                    if i > self.maxk:
-                        print("Could not detect person")
+                    #探索する最大人数を超えた，検索データ全てと照合した場合
+                    if i > self.maxk or i > len(index_list):
+                        #print("Could not detect person")
                         #ベクトル間の距離の加重平均値が最小の人物のIDを入力人物のIDとする
                         min_index = all_dist_list.index(min(all_dist_list))
                         cid = (self.gid_list[min_index])
@@ -390,19 +394,19 @@ class ReIDBase:
                     
                 #cv2.destroyWindow("Query")
                 
-            print("=== Finish Re-ID ===")
-            print("target ID > ", target)
-            print("temp ID > ", temp_id_list)
-            print("ID list > ", pid_list)
-            print("factor list > ", factor_list)
+            #print("=== Finish Re-ID ===")
+            #print("target ID > ", target)
+            #print("temp ID > ", temp_id_list)
+            #print("ID list > ", pid_list)
+            #print("factor list > ", factor_list)
             #入力人物の中に追尾対象がいるが，複数人が追尾対象と判断された場合
             if (target in pid_list) and (pid_list.count(target) > 1):
                 #追尾対象のIDがリストのどこにあるか
                 duplicate_index = [i for i, x in enumerate(pid_list) if x==target]
-                print("duplicate index > ", duplicate_index)
+                #print("duplicate index > ", duplicate_index)
                 #追尾対象と同一人物と判断された人たちのfactorの値
                 factors = [factor_list[j] for j in duplicate_index]
-                print("factors > ", factors)
+                #print("factors > ", factors)
                 #ベクトル間の距離の加重平均が最小の人を同一人物とする
                 truth_index = factors.index(min(factors))
                 target_person = temp_id_list[duplicate_index[truth_index]]

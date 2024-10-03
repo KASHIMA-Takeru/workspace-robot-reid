@@ -177,7 +177,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
 
 
         #同一人物か異なる人物かを判断する閾値
-        self.thrs = 250
+        self.thrs = 500
         #探索する最大人数
         self.maxk = 10
       
@@ -186,16 +186,16 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         #保存フォルダ
         self.save_folder = r'D:\master_research\Robot\tracking_test'
         #検索データの保存先
-        self.gallery_folder = r'D:\master_research\Robot\gallery_storage\0920'
+        self.gallery_folder = r'D:\master_research\Robot\gallery_storage\1003'
 
 
         '''
         ロボットの制御に使用するものたち
         '''
         #ロボットの基本移動速度[m/s]
-        self.normal_speed = 0.3
+        self.normal_speed = 0.2
         #ロボットの基本回転速度
-        self.va = 0.2
+        self.va = 0.1
 
         #ロボットの低速移動時の速度
         self.slow_speeds = [0.2, 0.1]
@@ -330,7 +330,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         width = self.width*2
         height = self.height
         #FPSは事前に測定したものに近い値に設定
-        fps = 4
+        fps = 2
         fmt = cv2.VideoWriter_fourcc(*'mp4v')
 
         self.writer = cv2.VideoWriter(osp.join(self.save_path, 'result.mp4'), fmt, fps, (width, height))
@@ -372,6 +372,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         color_img_flag = False
         depth_img_flag = False
         person_flag = False
+        made_person_flag = False
 
         '''
         カラー画像に関する処理
@@ -387,19 +388,19 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             color_image = cv2.imdecode(data_np, 1)
 
             color_img_flag = True
-            print("#1")
+            #print("#1")
 
             #OpenPoseで人物検出
             key_list, keyimage = opp.detect_keypoints(color_image)
-            print("#1.1")
+            #print("#1.1")
             #key_list: 検出された人物のキーポイントの座標が入った配列．
             #key_image: キーポイント間を線で結んだ画像
             
             #人物が検出された場合
             if type(key_list) == np.ndarray:
-                bbox_list, person_flag = opp.make_person_image(image=color_image, keypoints=key_list)
+                bbox_list, made_person_flag = opp.make_person_image(image=color_image, keypoints=key_list)
                 #bbox_list: 人物領域の四隅の座標が入ったリスト
-                print("#1.2")
+                #print("#1.2")
 
                 #人物画像作成
                 people_list = []
@@ -407,19 +408,19 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                     person = color_image[top: bottom, left: right]
                     people_list.append(person)
 
-            print("#2")
+            #print("#2")
             #画像の左上に対象人物のIDを書いておく
-            cv2.putText(keyimage, 'Target: {}'.format(self.target_id), (5, 20), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), thickness=3)
-            print("#2.1")
+            cv2.putText(keyimage, 'Target: {}'.format(self.target_id), (5, 20), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), thickness=2)
+            #print("#2.1")
 
             #人物画像が作成された場合
-            if person_flag:
-                print("#3")
-                print("People: ", len(people_list))
+            if made_person_flag:
+                #print("#3")
+                #print("People: ", len(people_list))
                 #Re-ID実行
                 target_index, pid_list = self.reid.run_reid(people_list, color_image, self.target_id, key_list)
                 #target_index: OpenPoseで検出した順番が0埋めの文字列として入っている．追尾対象がいないと判断された場合は-1が入っている．
-                print("#4")
+                #print("#4")
                 target_index = int(target_index)
                 #追尾対象が見つかった場合
                 if target_index != 'Not_exist':
@@ -429,8 +430,8 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                     #追尾対象の心臓部のx, y座標
                     target_x = int(target_point[0])
                     target_y = int(target_point[1])
-                    print("target x > ", target_x)
-                    print("target y > ", target_y)
+                    #print("target x > ", target_x)
+                    #print("target y > ", target_y)
 
                     cv2.circle(keyimage, (target_x, target_y), 10, self.BLUE, thickness=3)
 
@@ -461,49 +462,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             else:
                 cv2.circle(keyimage, (int(self.width/2), int(self.height/2)), 10, self.BLUE, thickness=3)
 
-                '''
-                #対象人物が見つからなかった場合
-                if target_index == 'not_exist':
-                    print("Lost target")
-                    #ロボットは移動せずその場で回転．回転方向はランダムに決める
-                    if rd.random() > 0.5:
-                        self._d_motion_instruct.data.va = self.va
 
-                    else:
-                        self._d_motion_instruct.data.va = -1 * self.va
-
-                #対象人物が見つかった場合
-                else:
-                    print("Detect target")
-                    person_flag = True
-                    #対象人物の位置を特定
-                    target_index = int(target_index)
-                    print("target index > ", target_index)
-                    target_box = bbox_list[target_index]
-
-                    #対象人物を四角で囲う
-                    cv2.rectangle(keyimage, (target_box[2], target_box[0]), (target_box[3], target_box[1]), (255, 0, 0), thickness=3)
-
-                    #対象人物の心臓部の座標取得
-                    target_point = key_list[target_index][1]
-                    #追尾対象の中心位置( = 心臓の位置)
-                    target_x = int(target_point[0])
-                    target_y = int(target_point[1])
-                    #対象人物の中心を円で囲う
-                    cv2.circle(keyimage, (target_x, target_y), 10, (255, 0, 0), thickness=3)
-                    print("#4.1")
-                    #目標点( = 追尾対象の中心位置)がカメラ画角より左側にある場合
-                    if target_x < 220:
-                        self._d_motion_instruct.va = self.va
-                        print("#4.2")
-                    #目標点がカメラ画角より右側にある場合
-                    elif target_x > 420:
-                        self._d_motion_instruct.va = -1 * self.va
-                        print("#4.3")
-                    else:
-                        self._d_motion_instruct.va = 0.0
-                        print("#4.4")
-                '''
             color_img_flag = True
 
 
@@ -511,7 +470,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         深度画像に関する処理
         '''
         if self._depth_dataIn.isNew():
-            print("#5")
+            #print("#5")
             self._d_depth_data = self._depth_dataIn.read()
             #深度データのByte列
             received_depth = self._d_depth_data.pixels
@@ -524,22 +483,22 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
 
             #カラー画像にする
             depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_scale, alpha=0.03), cv2.COLORMAP_JET)
-            print("#6")
+            #print("#6")
             #対象までの距離
             try:
                 target_dist = depth_scale[target_y][target_x] / 1000
-                print("#6.1")
+                #print("#6.1")
             #対象が検出出来なかった場合の処理
             except:
                 target_dist = 0
                 target_x = int(self.width / 2)
                 target_y = int(self.height / 2)
-                print("#6.2")
+                #print("#6.2")
 
             #対象の位置を円で囲う
             cv2.circle(depth_colormap, (target_x, target_y), 10, (255, 255, 255), thickness=3)
             cv2.putText(depth_colormap, str(target_dist), (5, 20), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), thickness=2)
-            print("#6.3")
+            #print("#6.3")
             depth_img_flag = True
 
             '''
@@ -562,32 +521,41 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                 elif target_dist < self.min_dist:
                     self._d_motion_instruct.data.vx = 0.0
 
-                print("#7")
+                #print("#7")
+
+            else:
+                self._d_motion_instruct.data.vx = 0.0
+                self._d_motion_instruct.data.va = 0.0
+
+
+            self._motion_instructionOut.write()
 
         '''
         画像出力
         '''
-        print("#8")
+        #print("#8")
         if color_img_flag and depth_img_flag:
             key_image_dim = keyimage.shape
             depth_map_dim = depth_colormap.shape
-            print("#8.1")
+            #print("#8.1")
             #カラー画像と深度画像を横並びにする
             if key_image_dim != depth_map_dim:
                 resized_keyimage = cv2.resize(keyimage, dsize=(depth_map_dim[1], depth_map_dim[0]), interpolation=cv2.INTER_AREA)
                 images = np.hstack((resized_keyimage, depth_colormap))
-                print("#8.2")
+                #print("#8.2")
             else:
                 images = np.hstack((keyimage, depth_colormap))
-                print("#8.3")
+                #print("#8.3")
 
-            cv2.imshow("Image", images)
-            cv2.waitKey(1)
+            #cv2.imshow("Image", images)
+            #cv2.waitKey(1)
 
             self.writer.write(images)
 
-        print("Motion > ", self._d_motion_instruct)
-        self._motion_instructionOut.write()
+        #print("Motion > ", self._d_motion_instruct)
+        #print("vx: ", self._d_motion_instruct.data.vx)
+        #print("va: ", self._d_motion_instruct.data.va)
+        
 
 
 

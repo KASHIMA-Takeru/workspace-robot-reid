@@ -207,13 +207,13 @@ class MakeGallery(OpenRTM_aist.DataFlowComponentBase):
         if self._imageIn.isNew():
             self._d_image = self._imageIn.read()
             received_data = self._d_image.pixels
-            print("#1")
+            #print("#1")
             #デコード            
             data_json = json.loads(received_data)
             image_dec = base64.b64decode(data_json)
             data_np = np.frombuffer(image_dec, dtype='uint8')
             image = cv2.imdecode(data_np, 1)
-            print("#2")
+            #print("#2")
 
             keypoints, keyimage = opp.detect_keypoints(image)
             
@@ -223,10 +223,10 @@ class MakeGallery(OpenRTM_aist.DataFlowComponentBase):
             #print("keypoints > ", keypoints)
             #人物画像作成
             if type(keypoints) == np.ndarray:
-                bbox_list = opp.make_person_image(image, keypoints=keypoints)
+                bbox_list, _ = opp.make_person_image(image, keypoints=keypoints)
                 for key in keypoints:
                     cropped_images = opp.make_part_image(image, keypoints=key)
-                print("#4")    
+                #print("#4")    
             
                 
                 for i, bbox in enumerate(bbox_list):
@@ -234,7 +234,7 @@ class MakeGallery(OpenRTM_aist.DataFlowComponentBase):
                     #保存名
                     timestamp = datetime.datetime.now().strftime("%H%M_%S")
                     save_name = '{}_s{}_{}_{}'.format(self.pid, self.camid, timestamp, str(i))
-                    print("person name > ", save_name)
+                    #print("person name > ", save_name)
                     #print("save > ", save_name)
                     #画像保存          
                     person = image[bbox[0]: bbox[1], bbox[2]: bbox[3]]
@@ -246,7 +246,7 @@ class MakeGallery(OpenRTM_aist.DataFlowComponentBase):
                         save_folder = osp.join(self.part_save_dir, part)
                         os.makedirs(save_folder, exist_ok=True)
                         part_save_name = save_name + '_{}'.format(part)
-                        print("name > ", part_save_name)
+                        #print("name > ", part_save_name)
                         cv2.imwrite(osp.join(save_folder, part_save_name + '.jpg'), cropped_images[part])
 
                     except:
