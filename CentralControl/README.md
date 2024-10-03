@@ -208,7 +208,7 @@ Output: ロボットへの動作指令．正面方向への移動速度と回転
 ### OutPorts definition
 
 #### motion_instruction
-
+ロボットへの動作指令．前方向への移動速度，回転方向と速度
 
 
 <table>
