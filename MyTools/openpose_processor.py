@@ -125,11 +125,11 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 100):
 
     #検出した人物ごとのループ
     for keys in keypoints:
-        print("mpi#1")
+        #print("mpi#1")
         key = np.where(keys[:, 2] > thrs)
         #検出されたキーポイント数が少ない場合は人物画像を作らない
         if len(key[0]) < 10:
-            print("mpi#2")
+            #print("mpi#2")
             continue
         
         '''
@@ -195,13 +195,13 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 100):
         #人物領域の面積が小さかったら人物領域は作成しない
         #基準：64 x 128
         if (bottom - top) < 128  or (right - left) < 64:
-            print("mpi#3")
+            #print("mpi#3")
             continue
         
         else:
             bbox_list.append([top, bottom, left, right])
             person_flag = True
-            print("mpi#4")
+            #print("mpi#4")
 
     return bbox_list, person_flag
 

@@ -374,6 +374,7 @@ class ReIDBase:
                         #print("{} was Detected as {}".format(temp_id, cid))
                         pid_list.append(cid)
                         factor_list.append(factor)
+                        print("factor: ", factor)
                         break
 
                     else:
