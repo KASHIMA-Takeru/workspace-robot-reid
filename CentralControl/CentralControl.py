@@ -409,11 +409,11 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             color_image = cv2.imdecode(data_np, 1)
 
             color_img_flag = True
-            print("#1")
+            #print("#1")
 
             #OpenPoseで人物検出
             key_list, keyimage = opp.detect_keypoints(color_image)
-            print("#1.1")
+            #print("#1.1")
             #key_list: 検出された人物のキーポイントの座標が入った配列．
             #key_image: キーポイント間を線で結んだ画像
             
@@ -421,10 +421,10 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             if type(key_list) == np.ndarray:
                 #print("length > ", len(key_list))
                 #print("key: ", key_list)
-                print("#1.2")
+                #print("#1.2")
                 bbox_list, made_person_flag = opp.make_person_image(image=color_image, keypoints=key_list)
                 #bbox_list: 人物領域の四隅の座標が入ったリスト
-                print("#1.3")
+                #print("#1.3")
 
                 #人物画像作成
                 people_list = []
@@ -432,23 +432,23 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                     person = color_image[top: bottom, left: right]
                     people_list.append(person)
 
-            print("#2")
+            #print("#2")
             #画像の左上に対象人物のIDを書いておく
             cv2.putText(keyimage, 'Target: {}'.format(self.target_id), (5, 20), cv2.FONT_HERSHEY_PLAIN, 2, (255, 0, 0), thickness=2)
-            print("#2.1")
+            #print("#2.1")
 
             #人物画像が作成された場合
             if made_person_flag:
-                print("#3")
+                #print("#3")
                 #print("People: ", len(people_list))
                 #Re-ID実行
                 target_index, pid_list = self.reid.run_reid(people_list, color_image, self.target_id, key_list)
                 #target_index: OpenPoseで検出した順番が0埋めの文字列として入っている．追尾対象がいないと判断された場合は-1が入っている．
-                print("#4")
+                #print("#4")
                 target_index = int(target_index)
                 #追尾対象が見つかった場合
                 if target_index != 'Not_exist':
-                    print("#4.1")
+                    #print("#4.1")
                     person_flag = True
                     #追尾の基準点として対象の心臓部を丸で囲う
                     target_point = key_list[target_index][1]
@@ -463,32 +463,32 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                     #ロボットへの指令
                     #基準点がカメラ画角の中央より左側にある場合
                     if target_x < 220:
-                        print("#4.2")
+                        #print("#4.2")
                         self._d_motion_instruct.data.va = self.va
                         self.last_time = 'left'
 
                     #基準点が画角中心より右側にある場合
                     elif target_x > 420:
-                        print("#4.3")
+                        #print("#4.3")
                         self._d_motion_instruct.data.va = -1 * self.va
                         self.last_time = 'right'
 
                     else:
-                        print("#4.4")
+                        #print("#4.4")
                         self._d_motion_instruct.data.va = 0
                         self.last_time = 'center'
                 
                 #追尾対象が見つからなかった場合
                 elif target_index == 'Non_exist':
-                    print("#4.5")
+                    #print("#4.5")
                     self._d_motion_instruct.data.vx = 0.0
                     #対象が直前までいた方向に回転する
                     if self.last_time == 'left':
-                        print("#4.6")
+                        #print("#4.6")
                         self._d_motion_instruct.data.va = self.va
 
                     elif self.last_time == 'right':
-                        print("#4.7")
+                        #print("#4.7")
                         self._d_motion_instruct.data.va = -1*self.va
                 
                 #検出された人物を四角で囲う．人物領域ごとのループ
@@ -504,16 +504,16 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                     cv2.putText(keyimage, pid, (target_box[2], target_box[0]), cv2.FONT_HERSHEY_PLAIN, 2, color, thickness=thickness)
 
             else:
-                print("4.8")
+                #print("4.8")
                 cv2.circle(keyimage, (int(self.width/2), int(self.height/2)), 10, self.BLUE, thickness=3)
                 self._d_motion_instruct.data.vx = 0.0
                 #対象が直前までいた方向に回転する
                 if self.last_time == 'left':
-                    print("#4.9")
+                    #print("#4.9")
                     self._d_motion_instruct.data.va = self.va
 
                 elif self.last_time == 'right':
-                    print("#4.10")
+                    #print("#4.10")
                     self._d_motion_instruct.data.va = -1*self.va
 
             color_img_flag = True
@@ -523,7 +523,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         深度画像に関する処理
         '''
         if self._depth_dataIn.isNew():
-            print("#5")
+            #print("#5")
             self._d_depth_data = self._depth_dataIn.read()
             #深度データのByte列
             received_depth = self._d_depth_data.pixels
@@ -536,23 +536,23 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
 
             #カラー画像にする
             depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_scale, alpha=0.03), cv2.COLORMAP_JET)
-            print("#6")
+            #print("#6")
             #対象までの距離
             try:
                 target_dist = depth_scale[target_y][target_x] / 1000
-                print("#6.1")
+                #print("#6.1")
             #対象が検出出来なかった場合の処理
             except:
                 target_dist = 0
                 target_x = int(self.width / 2)
                 target_y = int(self.height / 2)
-                print("#6.2")
+                #print("#6.2")
 
 
             #対象の位置を円で囲う
             cv2.circle(depth_colormap, (target_x, target_y), 10, (255, 255, 255), thickness=3)
             cv2.putText(depth_colormap, str(target_dist), (5, 20), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), thickness=2)
-            print("#6.3")
+            #print("#6.3")
             depth_img_flag = True
 
             '''
@@ -575,7 +575,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                 elif target_dist < self.min_dist:
                     self._d_motion_instruct.data.vx = 0.0
 
-                print("#7")
+                #print("#7")
 
             else:
                 self._d_motion_instruct.data.vx = 0.0
@@ -587,17 +587,17 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         '''
         画像出力
         '''
-        print("#8")
+        #print("#8")
         if color_img_flag and depth_img_flag:
             self.n_frame += 1
-            print("Frame: ", self.n_frame)
+            #print("Frame: ", self.n_frame)
             lap = time.perf_counter()
-            print("lap: ", lap)
+            #print("lap: ", lap)
             laptime = lap - self.start_time
-            print("laptime > ", laptime)
+            #print("laptime > ", laptime)
 
             cur_fps = self.n_frame / laptime
-            print("FPS > ", cur_fps)
+            #print("FPS > ", cur_fps)
             print("{} frame, {:3f} FPS".format(self.n_frame, cur_fps), file=self.f)
 
 
