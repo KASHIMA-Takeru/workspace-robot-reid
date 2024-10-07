@@ -205,7 +205,7 @@ class ReIDBase:
                         self.gallery_part_data[gname][part] = gpf
         
         self.gf_list = torch.cat(self.gf_list, dim=0)
-        print("Finish")
+        
         #print("Gallery IDs > ", self.gid_list)
         
     

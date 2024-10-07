@@ -167,6 +167,7 @@ class MakeGallery(OpenRTM_aist.DataFlowComponentBase):
     def onActivated(self, ec_id):
         date = datetime.datetime.now().strftime("%m%d")
         print("Start")
+        self.name_list = []
         self.pid = str(input("Input Person ID > ")).zfill(3)
         self.camid = str(input("Input Camera ID > ")).zfill(2)
         self.save_dir = r'D:\master_research\Robot\gallery_storage\{}'.format(date)
@@ -175,6 +176,7 @@ class MakeGallery(OpenRTM_aist.DataFlowComponentBase):
         os.makedirs(self.save_dir, exist_ok=True)
         os.makedirs(self.part_save_dir, exist_ok=True)
 
+        
         print("Ready")
     
         return RTC.RTC_OK
@@ -227,25 +229,38 @@ class MakeGallery(OpenRTM_aist.DataFlowComponentBase):
                 for key in keypoints:
                     cropped_images = opp.make_part_image(image, keypoints=key)
                 #print("#4")    
-            
                 
-                for i, bbox in enumerate(bbox_list):
-                    #print("person > ", type(person))
-                    #保存名
+                #保存名の決定．被りがなくなるまでループする
+                while True:
+                    i = 0
                     timestamp = datetime.datetime.now().strftime("%H%M_%S")
-                    save_name = '{}_s{}_{}_{}'.format(self.pid, self.camid, timestamp, str(i))
+                    name = '{}_s{}_{}_{}'.format(self.pid, self.camid, timestamp, str(i))
+
+                    if name in self.name_list:
+                        i += 1
+                        
+                        continue
+
+                    else:
+                        i = 0
+                        self.name_list.append(name)
+
+                        break
+                
+                for bbox in bbox_list:
+                    #print("person > ", type(person)) 
                     #print("person name > ", save_name)
                     #print("save > ", save_name)
                     #画像保存          
                     person = image[bbox[0]: bbox[1], bbox[2]: bbox[3]]
-                    cv2.imwrite(osp.join(self.save_dir, save_name + '.jpg'), person)
+                    cv2.imwrite(osp.join(self.save_dir, name + '.jpg'), person)
                     
 
                 for part in cropped_images.keys():
                     try:
                         save_folder = osp.join(self.part_save_dir, part)
                         os.makedirs(save_folder, exist_ok=True)
-                        part_save_name = save_name + '_{}'.format(part)
+                        part_save_name = name + '_{}'.format(part)
                         #print("name > ", part_save_name)
                         cv2.imwrite(osp.join(save_folder, part_save_name + '.jpg'), cropped_images[part])
 
