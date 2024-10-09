@@ -32,6 +32,7 @@ import os.path as osp
 
 import json
 import base64
+import csv
 
 import datetime
 import time
@@ -325,8 +326,8 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         self.save_path = osp.join(self.save_folder, exe_time)
         os.makedirs(self.save_path, exist_ok=True)
 
-        #記録用のtxtファイル
-        self.f = open(osp.join(self.save_path, 'log.txt'), 'a')
+        #条件のメモ用のtxtファイル
+        self.f = open(osp.join(self.save_path, 'memo.txt'), 'a')
         print("Execution Date: ", exe_time, file=self.f)
         print("==============", file=self.f)
         print("Basic Informatoin", file=self.f)
@@ -339,9 +340,16 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         print("2nd slow speed: {} m/s (less than {} m)".format(self.slow_speeds[1], self.slow_dist[1]), file=self.f)
         print("Minimum distance: {} m\n".format(self.min_dist), file=self.f)
 
+        #記録用のcsvファイル
+        logf = open(osp.join(self.save_path, 'log.csv'), 'a', newline="")
+        self.csv_writer = csv.writer(logf)
+        #ヘッダー書込み
+        self.csv_writer.writerow(['Frame', 'Decode(RGB)', 'Keypoints detect', 'Make person img', 'Re-ID', 'Draw circle', 'Instruct va', \
+            'Draw rectangle', 'Decode(depth)', 'Measure dist', 'Instruct vx', 'Imshow', '1cycle'])
+
         self.n_frame = 0
         self.start_time = time.perf_counter()
-        print("Start: ", self.start_time)
+        #print("Start: ", self.start_time)
 
         #画像表示用ウィンドウ
         cv2.namedWindow("Image", cv2.WINDOW_AUTOSIZE)
@@ -374,9 +382,9 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         cv2.destroyAllWindows()
         self.writer.release()
         self.f.close()
+        self.csv_writer.release()
 
         print("Deactivate")
-
     
         return RTC.RTC_OK
 	
@@ -397,31 +405,37 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         person_flag = False
         made_person_flag = False
 
+        #csv書込み用のリスト
+        row = []
+
         '''
         カラー画像に関する処理
         '''
         if self._image_dataIn.isNew():
             time_start_decode = time.perf_counter()
+            
+            #カラー画像のデコード
             self._d_image_data = self._image_dataIn.read()
-            #カラー画像のByte列
             received_data = self._d_image_data.pixels
-            #Decode
             data_json = json.loads(received_data)
             image_dec = base64.b64decode(data_json)
             data_np = np.frombuffer(image_dec, dtype='uint8')
             color_image = cv2.imdecode(data_np, 1)
 
             color_img_flag = True
+            
             if self.check:
                 print("#1")
+            
             time_decode = time.perf_counter() - time_start_decode
-            print("Time to decode: {:5f}".format(time_decode), file=self.f)
-
+            row.append(time_decode)
+        
             #OpenPoseで人物検出
             time_start_key = time.perf_counter()
             key_list, keyimage = opp.detect_keypoints(color_image)
             time_key = time.perf_counter() - time_start_key
-            print("Time to detect keypoints: {:5f}".format(time_key), file=self.f)
+            row.append(time_key)
+            
             if self.check:
                 print("#1.1")
             #key_list: 検出された人物のキーポイントの座標が入った配列．
@@ -446,7 +460,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                     people_list.append(person)
 
                 time_mpi = time.perf_counter() - time_start_mpi
-                print("Time to MPI: {:5f}".format(time_mpi), file=self.f)
+                row.append(time_mpi)
 
             if self.check:
                 print("#2")
@@ -468,7 +482,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                     print("#4")
                 target_index = int(target_index)
                 time_reid = time.perf_counter() - time_start_reid
-                print("Time to Re-ID: {:5f}".format(time_reid), file=self.f)
+                row.append(time_reid)
 
 
                 #追尾対象が見つかった場合
@@ -487,7 +501,8 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
 
                     cv2.circle(keyimage, (target_x, target_y), 10, self.BLUE, thickness=3)
                     time_circle = time.perf_counter() - time_start_circle
-                    print("Time to circle: {:5f}".format(time_circle), file=self.f)
+                    row.append(time_circle)
+                    
                     #ロボットへの指令
                     #基準点がカメラ画角の中央より左側にある場合
                     time_start_instruct = time.perf_counter()
@@ -510,7 +525,8 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                         self._d_motion_instruct.data.va = 0
                         self.last_time = 'center'
                     time_instruct = time.perf_counter() - time_start_instruct
-                    print("Time to instruct direction: {:5f}".format(time_instruct), file=self.f)
+                    row.append(time_instruct)
+                    
 
                 #追尾対象が見つからなかった場合
                 elif target_index == 'Non_exist':
@@ -543,8 +559,9 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                     cv2.putText(keyimage, pid, (target_box[2], target_box[0]), cv2.FONT_HERSHEY_PLAIN, 2, color, thickness=thickness)
 
                 time_rect = time.perf_counter() - time_start_rect
-                print("Time to rect: {:5f}".format(time_rect), file=self.f)
-
+                row.append(time_rect)
+            
+            #人物画像が作成されなかった場合
             else:
                 if self.check:
                     print("4.8")
@@ -574,10 +591,11 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             time_start_dec_dep = time.perf_counter()
             if self.check:
                 print("#5")
+            #深度データのデコード
             self._d_depth_data = self._depth_dataIn.read()
             #深度データのByte列
             received_depth = self._d_depth_data.pixels
-            #Decode
+            
             dept_json = json.loads(received_depth)
             dept_dec = base64.b64decode(dept_json)
             dept_np = np.frombuffer(dept_dec, dtype='uint8')
@@ -588,10 +606,12 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_scale, alpha=0.03), cv2.COLORMAP_JET)
             if self.check:
                 print("#6")
-            #対象までの距離
-            time_dec_dep = time.perf_counter() - time_start_dec_dep
-            print("Time to decode(depth): {:5f}".format(time_dec_dep), file=self.f)
 
+            time_dec_dep = time.perf_counter() - time_start_dec_dep
+            row.append(time_dec_dep)
+
+            #対象までの距離
+            time_start_dist = time.perf_counter()
             try:
                 target_dist = depth_scale[target_y][target_x] / 1000
                 if self.check:
@@ -603,6 +623,9 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                 target_y = int(self.height / 2)
                 if self.check:
                     print("#6.2")
+
+            time_dist = time.perf_counter() - time_start_dist
+            row.append(time_dist)
 
 
             #対象の位置を円で囲う
@@ -641,7 +664,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                 #self._d_motion_instruct.data.va = 0.0
 
             time_speed = time.perf_counter() - time_start_speed
-            print("Time to instruct speed: {:5f}".format(time_speed), file=self.f)
+            row.append(time_speed)
                     
             self._motion_instructionOut.write()
 
@@ -676,7 +699,8 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             self.writer.write(images)
 
             time_imshow = time.perf_counter() - time_start_imshow
-            print("Time to show: {:5f}".format(time_imshow), file=self.f)
+            row.append(time_imshow)
+            
 
             self.n_frame += 1
             #print("Frame: ", self.n_frame)
@@ -686,7 +710,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             #print("laptime > ", laptime)
 
             cur_fps = self.n_frame / laptime
-            print("FPS > ", cur_fps)
+           
             print("{} frame, {:3f} FPS".format(self.n_frame, cur_fps), file=self.f)
 
         #print("Motion > ", self._d_motion_instruct)
@@ -694,8 +718,10 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         #print("va: ", self._d_motion_instruct.data.va)
         
         time_exe = time.perf_counter() - time_start_exe
-        print("Time of 1 cycle: {:5f}".format(time_exe), file=self.f)
+        row.append(time_exe)
+        row.insert(self.n_frame)
         
+        self.csv_writer.writerow(row)
 
         return RTC.RTC_OK
 	
