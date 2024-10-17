@@ -107,14 +107,13 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 100):
         person = image[top: bottom, left: right]
 
     '''
+
+    person_flag = False
     #画像の高さと幅
     h, w, _ = image.shape
     #人物領域の4隅の座標を入れていくリスト(人物画像を入れると処理が重くなりそう?)
     bbox_list = []
-    
-    #人物画像が作成されたかの印
-    person_flag = False
-    
+       
     #keypointsがNoneならキーポイント検出
     if type(keypoints) == np.ndarray:
         pass
@@ -122,14 +121,12 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 100):
     elif keypoints == None:
         keypoints, _ = detect_keypoints(image)
         
-
     #検出した人物ごとのループ
     for keys in keypoints:
-        #print("mpi#1")
+        
         key = np.where(keys[:, 2] > thrs)
         #検出されたキーポイント数が少ない場合は人物画像を作らない
         if len(key[0]) < 10:
-            #print("mpi#2")
             continue
         
         '''
@@ -144,67 +141,83 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 100):
             pm = abs(keys[17][0] - keys[18][0]) / 145.7
             
             #顔の上端．両耳のうち上にある方~頭頂部まで(A33: 135.4)
-            face_top = max(0, min(keys[17][1], keys[18][1]) - pm * 135.4)
+            #face_top = max(0, min(keys[17][1], keys[18][1]) - pm * 135.4)
             
             #上端の追加ピクセル．耳の位置 - 顔の上端
-            ex_top = min(keys[17][1], keys[18][1]) - face_top
+            #ex_top = min(keys[17][1], keys[18][1]) - face_top
             #print("#1")
             
-        #片耳のみ位置が推定されている場合
+        #片耳のみ位置が推定されている場合(鼻の位置が推定されている前提)
         #右耳は推定されているが左耳は推定されていない場合
-        elif keys[17][2] > thrs and keys[18][2] < thrs:
+        elif keys[17][2] > thrs and keys[18][2] < thrs and keys[0][2] > thrs:
             #pm: 鼻~頭部後端(A21: 199.5)と耳~頭部後端(A27: 87.4)から算出
             pm = abs(keys[0][0] - keys[17][0]) / (199.5 - 87.4)
             
             #顔の上端．耳~頭頂部
-            face_top = max(0, keys[17][1] - pm * 135.4)
+            #face_top = max(0, keys[17][1] - pm * 135.4)
             
             #追加ピクセル
-            ex_top = keys[17][1] - face_top
+            #ex_top = keys[17][1] - face_top
             #print("#2")
             
         #左耳の位置は推定されているが右耳の位置は推定されていない場合       
-        elif keys[18][2] > thrs and keys[17][2] < thrs:
+        elif keys[18][2] > thrs and keys[17][2] < thrs and keys[0][2] > thrs:
             #pm: 鼻~頭部後端(A21: 199.5)と耳~頭部後端(A27: 87.4)から算出
             pm = abs(keys[0][0] - keys[18][0]) / (199.5 - 87.4)
             
             #顔の上端．耳~頭頂部
-            face_top = max(0, keys[18][1] - pm * 135.4)
+            #face_top = max(0, keys[18][1] - pm * 135.4)
             
             #追加ピクセル
-            ex_top = keys[18][1] - face_top + pm * ex_len
+            #ex_top = keys[18][1] - face_top + pm * ex_len
+        
+        #両肩の位置が検出されている場合
+        elif keys[2][2] > thrs and keys[5][2] > thrs:
+            '''
+            shoulder_dist = m.dist((right_shoulder[x], right_shoulder[y]), \
+                                 (left_shoulder[x], left_shoulder[y]))
+            #pm: 肩峰幅(D7: 378.8)を用いて算出
+            pm = shoulder_dist / 378.8
+            '''
+            shoulder_width = m.dist((keys[2][0], keys[2][1]), (keys[5][0], keys[5][1]))
+            pm = shoulder_width / 378.8
             
+        #右肘と右手首が検出されている場合
+        elif keys[3][2] > thrs and keys[4][2] > thrs:
+            forearm_len = m.dist((keys[3][0], keys[3][1]), (keys[4][0], keys[4][1]))
+            pm = forearm_len / 240.5
+
+        #左肘と左手首が検出されている場合
+        elif keys[6][2] > thrs and keys[7][2] > thrs:
+            forearm_len = m.dist((keys[6][0], keys[6][1]), (keys[7][0], keys[7][1]))
+            pm = forearm_len / 240.5
             #print("#3")
-            
-        else:
-            ex_top = 10
-            ex_len = 10
-            pm = 1
+        #
         #print("Face top > ", face_top)
         #print("Extra top > ", ex_top)
+        #print("pm : ", pm)
+        #print("extra : ", ex_len)
         
         '''
         人物領域の決定
         '''
         #上下左右端
-        top = max(0, round(min(keys[key][:, 1]) - ex_top))
+        top = max(0, round(min(keys[key][:, 1]) - pm * ex_len))
         bottom = min(h, round(max(keys[key][:, 1]) + pm * ex_len))
         left = max(0, round(min(keys[key][:, 0]) - pm * ex_len))
         right = min(w, round(max(keys[key][:, 0]) + pm * ex_len))
         
+        
         #人物領域の面積が小さかったら人物領域は作成しない
         #基準：64 x 128
         if (bottom - top) < 128  or (right - left) < 64:
-            #print("mpi#3")
             continue
         
         else:
             bbox_list.append([top, bottom, left, right])
             person_flag = True
-            #print("mpi#4")
 
-    return bbox_list, person_flag
-
+        return bbox_list, person_flag
 
 '''
 切り取る座標を決める関数
