@@ -145,7 +145,6 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 100):
             
             #上端の追加ピクセル．耳の位置 - 顔の上端
             #ex_top = min(keys[17][1], keys[18][1]) - face_top
-            #print("#1")
             
         #片耳のみ位置が推定されている場合(鼻の位置が推定されている前提)
         #右耳は推定されているが左耳は推定されていない場合
@@ -158,7 +157,7 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 100):
             
             #追加ピクセル
             #ex_top = keys[17][1] - face_top
-            #print("#2")
+
             
         #左耳の位置は推定されているが右耳の位置は推定されていない場合       
         elif keys[18][2] > thrs and keys[17][2] < thrs and keys[0][2] > thrs:
@@ -191,12 +190,7 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 100):
         elif keys[6][2] > thrs and keys[7][2] > thrs:
             forearm_len = m.dist((keys[6][0], keys[6][1]), (keys[7][0], keys[7][1]))
             pm = forearm_len / 240.5
-            #print("#3")
-        #
-        #print("Face top > ", face_top)
-        #print("Extra top > ", ex_top)
-        #print("pm : ", pm)
-        #print("extra : ", ex_len)
+
         
         '''
         人物領域の決定
