@@ -232,6 +232,7 @@ class ReIDBase:
             それとtarget_personを照らし合わせることで，画像中のどこに追尾対象がいるかを判断する予定
 
         '''
+
         #print("Run Re-ID")
         #全身画像をCNNに入力して特徴ベクトル抽出
         qfs = myt.feature_extractor(self.pivod_dict['wholebody']['model'], people, self.pivod_dict['wholebody']['size'])
@@ -411,18 +412,20 @@ class ReIDBase:
                 #ベクトル間の距離の加重平均が最小の人を同一人物とする
                 truth_index = factors.index(min(factors))
                 target_person = temp_id_list[duplicate_index[truth_index]]
+                target_flag = True
                 
             #入力人物の中に追尾対象がいて，対象と判断された人が1人のみだった場合
             elif (target in pid_list) and (pid_list.count(target) == 1):
                 target_index = pid_list.index(target)
                 target_person = temp_id_list[target_index]
+                target_flag = True
                 
             #入力人物の中に追尾対象がいなかった場合
             elif target not in pid_list:
                 target_person = 'Not_exist'
-                    
+                target_flag = False    
             
-            return target_person, pid_list
+            return target_person, pid_list, target_flag
 
 
 
