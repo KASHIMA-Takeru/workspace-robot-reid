@@ -225,10 +225,12 @@ class MakeGallery(OpenRTM_aist.DataFlowComponentBase):
             #print("keypoints > ", keypoints)
             #人物画像作成
             if type(keypoints) == np.ndarray:
+                print("#3")
                 bbox_list, _ = opp.make_person_image(image, keypoints=keypoints)
+                print("#3.1")
                 for key in keypoints:
                     cropped_images = opp.make_part_image(image, keypoints=key)
-                #print("#4")    
+                print("#4")    
                 
                 #保存名の決定．被りがなくなるまでループする
                 while True:
