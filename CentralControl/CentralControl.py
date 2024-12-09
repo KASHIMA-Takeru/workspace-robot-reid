@@ -183,6 +183,8 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         self.save_folder = r'D:\master_research\Robot\tracking_test'
         #検索データの保存先
         self.gallery_folder = r'D:\master_research\Robot\gallery_storage\1121'
+        #NNのパス
+        self.nn_path = 'nn_model.pth'
 
         #Re-IDを実行する頻度(frame / 回)
         self.reid_freq = 1
@@ -271,12 +273,13 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             pivod_dict = self.pivod_dict, 
             save_dir = self.save_folder,
             use_part = self.use_part,
+            use_nn = self.use_nn,
             thrs = self.thrs,
             maxk = self.maxk
             )
 
         #Re-ID準備
-        self.reid.prepare(self.gallery_folder)
+        self.reid.prepare(self.gallery_folder, self.nn_path)
 
         
         print("Ready for Re-ID")

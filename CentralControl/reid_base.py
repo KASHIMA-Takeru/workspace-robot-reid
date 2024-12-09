@@ -6,12 +6,14 @@ Created on Thu Aug 15 14:27:11 2024
 Re-IDを行うクラスの雛型を作りたい．今後ロボットに搭載できるように書いていきたい
 →過去に作成したクラス(reid.py，reid2.py)は時間計測とか閾値のループとかが入っていて他で使えないので．
 """
+from multiprocessing import Value
 import os
 import os.path as osp
 import glob
 import tqdm
 
 import torch
+import torch.nn as nn
 import numpy as np
 import cv2
 
@@ -23,6 +25,7 @@ import itertools
 import MyTools as myt
 from MyTools import openpose_processor as opp
 import mymodels as mym
+from judge_nn import MyNN
 
 
 '''
@@ -31,7 +34,7 @@ Re-IDを行うクラス
 class ReIDBase:
     
     def __init__(self, pivod_dict: dict, save_dir: str,
-                 use_part: bool = True, thrs: float = 20.0, maxk: int = 50):
+                 use_part: bool = True, use_nn: bool = True, thrs: float = 20.0, maxk: int = 50):
         '''
         Parameters
         ----------
@@ -93,7 +96,11 @@ class ReIDBase:
         self.use_part = use_part
         self.thrs = thrs
         self.maxk = maxk
-        
+        self.use_nn = use_nn
+        self.mynn = MyNN()
+        self.softmax = nn.Softmax(dim=0)
+ 
+
         #入力画像のデータを入れる辞書
         #複数人物が検出されたときに，全身画像でのRe-IDは一括で行いたい．
         #キーを検出された番号にして，値を更に辞書にして，キーを全身画像，各部位にしてその値を画像(配列)または特徴ベクトルにする?
@@ -114,7 +121,7 @@ class ReIDBase:
     '''
     モデルの読み込み，検索画像の特徴抽出を行う関数
     '''
-    def prepare(self, gpath):
+    def prepare(self, gpath, nn_path: str):
         '''
         Parameters
         ----------
@@ -154,7 +161,11 @@ class ReIDBase:
                 mym.load_model(model, self.pivod_dict[part]['path'])
                 self.pivod_dict[part]['model'] = model
         
-        
+        if self.use_nn:
+            self.mynn.load_state_dict(torch.load(nn_path))
+            self.mynn.cuda()
+            self.mynn.eval()
+
         '''
         Summary表示
         '''
@@ -212,7 +223,7 @@ class ReIDBase:
     '''
     Re-IDを行う関数
     '''
-    def run_reid(self, people, frame, target, keypoints):
+    def run_reid(self, people, frame, target, keypoints, patch=-100):
         '''
         Parameters
         ----------
@@ -276,6 +287,7 @@ class ReIDBase:
 
                 #全ての候補画像の計算結果をいれていくリスト
                 all_dist_list = []
+                all_factor_list = []
 
                 #候補画像ごとのループ
                 for i, cidx in enumerate(index_list):
@@ -315,58 +327,47 @@ class ReIDBase:
                             pd_dict[part] = self.pivod_dict[part]['weight'] * pdist.item()
                             #print("distance > ", pdist.item())
                         
-                        except NotImplementedError:
-                            #print("Not implemented error")
-                            #print("{} image does not exist".format(part))
-                            #print("query {} > ".format(part), type(self.query_data[temp_id][part]))
-                            pd_dict[part] = None
+                        except (NotImplementedError, ValueError, AssertionError, KeyError):
+                            pd_dict[part] = patch
                             
-                        except ValueError:
-                            #print("Value error")
-                            #print("query {} image: ".format(part), type(self.query_data[temp_id][part]))
-                            #print("shape: ", self.query_data[temp_id][part].shape)
-                            #print("candidate {} image: ".format(part), type(cpf))
-                            
-                            pd_dict[part] = None
-                            #入力画像の部位が正常に切り取られなかったら特徴抽出の段階でここに来る
-                            #→画像の幅か高さが0になる場合がある
-                            #OpenPoseへの入力が人物画像だったのが原因ぽい
-                            
-                        except AssertionError:
-                            #print("Assertion error")
-                            #print("input for calc_euclidean_dist is not correct")
-                            #print("candidate {} image: ".format(part), type(cpf))
-                            #候補画像の部位画像が存在しない場合は，ベクトル間の距離計算の段階でここに来る
-                            pd_dict[part] = None
-                            
-                        except KeyError:
-                            #print("Key error")
-                            #print("{} image of query doesn't exist!".format(part))
-                            #print("keys: ", self.query_data[temp_id].keys())
-                            pd_dict[part] = None
-                            #入力画像の部位画像が存在しない場合は特徴抽出の段階でここに来る
-  
-                    #加重平均計算
-                    values = list(pd_dict.values())
-                    #print("values > ", values)
-                    values = [v for v in values if v != None]
-                    
-                    factor = np.mean(values)
-                    #pprint.pprint(pd_dict)
-                    #print("Factor >  {:.3f}".format(factor))
-                    all_dist_list.append(factor)
-                    print("factor: ", factor)
-                    #閾値より小さかったら同一人物
-                    if self.thrs > factor:
-                        #print("{} was Detected as {}".format(temp_id, cid))
-                        pid_list.append(cid)
-                        factor_list.append(factor)
-                        
-                        break
+                    #NNを使った判断
+                    if self.use_nn:
+                        values = torch.tensor(list(pd_dict.values())).cuda()
+                        y = self.mynn.forward(values)
+                        prediction = torch.argmax(y)
+                        output = self.softmax(y.detach())
+                        factor = output[0]
+                        all_factor_list.append(output)
+
+                        #同一人物かの判断
+                        if prediction == 0:
+                            pid_list.append(cid)
+                            factor_list.append(factor)
+
+                            break
 
                     else:
+                        #加重平均計算
+                        values = list(pd_dict.values())
+                        #print("values > ", values)
+                        values = [v for v in values if v != None]
+                    
+                        factor = np.mean(values)
+                        #pprint.pprint(pd_dict)
+                        #print("Factor >  {:.3f}".format(factor))
                         all_dist_list.append(factor)
-                        #print("Detected as different person. Factor: ", factor)
+                        
+                        #閾値より小さかったら同一人物
+                        if self.thrs > factor:
+                            #print("{} was Detected as {}".format(temp_id, cid))
+                            pid_list.append(cid)
+                            factor_list.append(factor)
+                        
+                            break
+
+                        else:
+                            all_dist_list.append(factor)
+                            #print("Detected as different person. Factor: ", factor)
                     
 
                     #探索する最大人数を超えた，検索データ全てと照合した場合
@@ -396,8 +397,12 @@ class ReIDBase:
                 #追尾対象と同一人物と判断された人たちのfactorの値
                 factors = [factor_list[j] for j in duplicate_index]
                 #print("factors > ", factors)
-                #ベクトル間の距離の加重平均が最小の人を同一人物とする
-                truth_index = factors.index(min(factors))
+                if self.use_nn:
+                    #同一人物の確率が最も高い人を同一人物とする
+                    truth_index = factors.index(max(factors))
+                else:
+                    #ベクトル間の距離の加重平均が最小の人を同一人物とする
+                    truth_index = factors.index(min(factors))
                 target_person = temp_id_list[duplicate_index[truth_index]]
                 target_flag = True
                 
