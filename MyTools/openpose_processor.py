@@ -83,7 +83,7 @@ def detect_keypoints(image: np.ndarray)-> np.ndarray:
 カメラ画像から人物領域の画像を作成する関数
 複数人写っている場合はそれぞれの画像を作成する
 '''
-def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 100):
+def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 150):
     '''
     Parameters
     ----------
@@ -127,18 +127,13 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 100):
         
     #検出した人物ごとのループ
     for keys in keypoints:
-        #print("mpi loop")
         key = np.where(keys[:, 2] > thrs)
-        #print("keypoint: ", keys)
-        #print("key: ", key)
-        #print("key[0]: ", key[0])
-        #検出されたキーポイント数が少ない場合は人物画像を作らない
-        if len(key[0]) < 10:
-            #print("too small numberes keypoint")
-            
+
+        #検出されたキーポイント数が少ないまたは心臓部が検出されていない場合は人物画像を作らない
+        if len(key[0]) < 10 or keys[1][2] < thrs:
+
             continue
         
-        #print("mpi#0")
         '''
         上端の追加ピクセル
         →耳か目が一番上のキーポイントの想定
@@ -169,7 +164,6 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 100):
             
             #追加ピクセル
             #ex_top = keys[17][1] - face_top
-
             
         #左耳の位置は推定されているが右耳の位置は推定されていない場合       
         elif keys[18][2] > thrs and keys[17][2] < thrs and keys[0][2] > thrs:
@@ -670,7 +664,7 @@ def decide_coordinates(keys, w, h, beta=20):
             左右端
             '''
             #右端は上と同じ
-            back_x0 = max(0, min(left_shoulder[x], left_elbow[x])-(shoulder_w+beta)*pm)
+            back_x0 = max(0, left_shoulder[x]-(shoulder_w+beta)*pm)
             back_x1 = min(w, right_shoulder[x]+(shoulder_w+beta)*pm)
             
         #左肘の位置は検出されているが右肘の位置は推定されていない場合
@@ -796,7 +790,7 @@ def decide_coordinates(keys, w, h, beta=20):
         #上肢長(C7: 301.2)を用いて計算
         pm = arm_l / 301.2
         
-        #右手首の位置が検出されている場合
+        #左手首の位置が検出されている場合
         if left_wrist[r] > 0.1:
             '''
             左右端
@@ -812,7 +806,7 @@ def decide_coordinates(keys, w, h, beta=20):
             leftarm_y0 = max(0, min(left_shoulder[y], left_elbow[y], left_wrist[y])-pm*(112.4+beta))
             leftarm_y1 = min(h, max(left_shoulder[y], left_elbow[y], left_wrist[y])+pm*(112.4+beta))
             
-        #右手首の位置が検出されていない場合
+        #左手首の位置が検出されていない場合
         elif left_wrist[r] < 0.1:
             '''
             左右端
