@@ -1,2 +1,2 @@
 eclipse.preferences.version=1
-jp.go.aist.rtm.nameserviceview.NameServiceViewPlugin.sever.items=localhost,192.168.0.62
+jp.go.aist.rtm.nameserviceview.NameServiceViewPlugin.sever.items=192.168.0.62,localhost

@@ -369,13 +369,13 @@ class ReIDBase:
                     #pprint.pprint(pd_dict)
                     #print("Factor >  {:.3f}".format(factor))
                     all_dist_list.append(factor)
-                    
+                    print("factor: ", factor)
                     #閾値より小さかったら同一人物
                     if self.thrs > factor:
                         #print("{} was Detected as {}".format(temp_id, cid))
                         pid_list.append(cid)
                         factor_list.append(factor)
-                        print("factor: ", factor)
+                        
                         break
 
                     else:
@@ -391,6 +391,7 @@ class ReIDBase:
                         cid = (self.gid_list[min_index])
                         pid_list.append(cid)
                         factor_list.append(factor)
+                        print("Could not find target")
 
                         break
                     

@@ -175,8 +175,7 @@ class MakeGallery(OpenRTM_aist.DataFlowComponentBase):
 
         os.makedirs(self.save_dir, exist_ok=True)
         os.makedirs(self.part_save_dir, exist_ok=True)
-
-        
+   
         print("Ready")
     
         return RTC.RTC_OK
