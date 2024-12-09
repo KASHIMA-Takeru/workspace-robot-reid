@@ -236,28 +236,22 @@ class ReIDBase:
         #print("Run Re-ID")
         #全身画像をCNNに入力して特徴ベクトル抽出
         qfs = myt.feature_extractor(self.pivod_dict['wholebody']['model'], people, self.pivod_dict['wholebody']['size'])
-        #print("reid#1")
+
         #特徴ベクトル間の距離計算
         distmat = myt.calc_euclidean_dist(qfs, self.gf_list).cpu()
-        #print("reid#2")
         #print("distmat > ", distmat)
         
         #ベクトル間の距離の順位
         indices = np.argsort(distmat.cpu(), axis=1)
         indices = np.asarray(indices)
-        #print("reid#3")
-        #print("indices > ", indices)
+
         #距離が最短の画像の位置
         min_pos = [np.argmin(dist).item() for dist in distmat]
         #print("min position > ", min_pos)
         
         #距離が最短だった検索データのID取得
         cids = [self.gid_list[j] for j in min_pos]
-        #print("candidate IDs > ", cids)
-        #print("indices > ", indices)
-        #print("type > ", type(indices))
-        #print("shape > ", indices.shape)
-        #print("0 > ", indices[0])
+
         #身体部位画像でのRe-ID
         if self.use_part:
             #入力画像の最終的なIDを入れるリスト
@@ -270,25 +264,19 @@ class ReIDBase:
             
             #入力画像ごとのループ
             for qidx, (qimg, key) in enumerate(zip(people, keypoints)):
-                #print("======")
-                #cv2.imshow("Query", qimg)
-                #cv2.waitKey(1)
-                #print("key > ", key)
+
                 #入力人物の仮ID
                 temp_id = str(qidx).zfill(3)
                 temp_id_list.append(temp_id)
-                #print("reid#4")
+
                 q_part_images = opp.make_part_image(frame, key)
-                #print("reied#5")
                 self.query_data[temp_id] = q_part_images
                 #入力画像と特徴ベクトル間の距離が短い候補画像の位置が入ったリスト
                 index_list = indices[qidx]
-                #print("reid#6")
-                #print("index list > ", index_list)
+
                 #全ての候補画像の計算結果をいれていくリスト
                 all_dist_list = []
-                #print("pivod dict > ", self.pivod_dict.keys())
-                #print("query data > ", self.query_data[temp_id].keys())
+
                 #候補画像ごとのループ
                 for i, cidx in enumerate(index_list):
                     #print("Candidate {} / {}".format(i+1, len(index_list)))
@@ -316,15 +304,13 @@ class ReIDBase:
                             #身体部位画像の特徴抽出
                             #print("query part image: ", type(self.query_data[temp_id][part]))
                             qpf = myt.feature_extractor(self.pivod_dict[part]['model'], self.query_data[temp_id][part], self.pivod_dict[part]['size'])
-                            #print("#1")
                             #候補画像の身体部位の特徴
                             cpf = self.gallery_part_data[cname][part]
-                            #print("#2")
                             #print("Candidate part feature > ", type(cpf))
                             
                             #ベクトル間の距離計算
                             pdist = myt.calc_euclidean_dist(qpf, cpf)
-                            #print("#3")
+
                             #計算結果を辞書に追加
                             pd_dict[part] = self.pivod_dict[part]['weight'] * pdist.item()
                             #print("distance > ", pdist.item())

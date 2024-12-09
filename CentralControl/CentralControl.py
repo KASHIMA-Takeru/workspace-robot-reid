@@ -75,7 +75,7 @@ centralcontrol_spec = ["implementation_id", "CentralControl",
 # 
 # </rtc-template>
 class CentralControl(OpenRTM_aist.DataFlowComponentBase):
-	
+    
     ##
     # @brief constructor
     # @param manager Maneger Object
@@ -176,13 +176,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                 'size': (64, 128)
                 }
             }
-
-
-        #同一人物か異なる人物かを判断する閾値
-        self.thrs = 300
-        #探索する最大人数
-        self.maxk = 10
-      
+     
         #追尾対象のID
         self.target_id = '001'
         #保存フォルダ
@@ -192,7 +186,15 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
 
         #Re-IDを実行する頻度(frame / 回)
         self.reid_freq = 1
-
+        
+        #身体部位画像でのRe-IDを行うか
+        self.use_part = True
+        #同一人物かの判断にNNを使うか
+        self.use_nn = True
+        #同一人物か異なる人物かを判断する閾値
+        self.thrs = 300
+        #探索する最大人数
+        self.maxk = 10
 
         '''
         ロボットの制御に使用するものたち
@@ -210,13 +212,9 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         #ロボットと人の最短距離(この距離以下になったらロボットを停止させる)[m]
         self.min_dist = 0.7
 
-        
-
         #カメラ画像の左・中央・右の境界
         self.l_border = 240
         self.r_border = 400
-
-        self.check = True
 
         '''
         使用するカメラに関する値
@@ -238,11 +236,11 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         self.target_y = int(self.height / 2)
         # initialize of configuration-data.
         # <rtc-template block="init_conf_param">
-		
+        
         # </rtc-template>
 
 
-		 
+         
     ##
     #
     # The initialize action (on CREATED->ALIVE transition)
@@ -253,26 +251,26 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
     def onInitialize(self):
 
         # Bind variables and configuration variable
-		
+        
         # Set InPort buffers
         self.addInPort("image_data", self._image_dataIn)
         self.addInPort("depth_data", self._depth_dataIn)
-		
+        
         # Set OutPort buffers
         self.addOutPort("motion_instruction", self._motion_instructionOut)
-		
+        
 
         # Set service provider to Ports
-		
+        
         # Set service consumers to Ports
-		
+        
         # Set CORBA Service Ports
 
         #Re-IDクラスのオブジェクト生成
         self.reid = ReIDBase(
             pivod_dict = self.pivod_dict, 
             save_dir = self.save_folder,
-            use_part = True,
+            use_part = self.use_part,
             thrs = self.thrs,
             maxk = self.maxk
             )
@@ -282,9 +280,9 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
 
         
         print("Ready for Re-ID")
-		
+        
         return RTC.RTC_OK
-	
+    
     ###
     ## 
     ## The finalize action (on ALIVE->END transition)
@@ -296,7 +294,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
     #
 
     #    return RTC.RTC_OK
-	
+    
     ###
     ##
     ## The startup action when ExecutionContext startup
@@ -309,7 +307,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
     #def onStartup(self, ec_id):
     #
     #    return RTC.RTC_OK
-	
+    
     ###
     ##
     ## The shutdown action when ExecutionContext stop
@@ -322,7 +320,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
     #def onShutdown(self, ec_id):
     #
     #    return RTC.RTC_OK
-	
+    
     ##
     #
     # The activated action (Active state entry action)
@@ -390,7 +388,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
 
 
         return RTC.RTC_OK
-	
+    
     ##
     #
     # The deactivated action (Active state exit action)
@@ -409,7 +407,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         print("Deactivate")
     
         return RTC.RTC_OK
-	
+    
     ##
     #
     # The execution action that is invoked periodically
@@ -448,9 +446,6 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
 
                 color_img_flag = True
             
-                if self.check:
-                    print("color image #1")
-            
                 time_decode = time.perf_counter() - time_start_decode
                 #row.append(time_decode)
         
@@ -460,21 +455,15 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                 time_key = time.perf_counter() - time_start_key
                 #row.append(time_key)
             
-                if self.check:
-                    print("color image #2")
                 #keypoints: 検出された人物のキーポイントの座標が入った配列．
                 #key_image: キーポイント間を線で結んだ画像
             
                 #人物が検出された場合
                 if type(keypoints) == np.ndarray:
 
-                    if self.check:
-                        print("color image #3")
                     time_start_mpi = time.perf_counter()
                     bbox_list, made_person_flag = opp.make_person_image(image=color_image, keypoints=keypoints)
                     #bbox_list: 人物領域の四隅の座標が入ったリスト
-                    if self.check:    
-                        print("color image #4")
 
                     #人物画像作成
                     people_list = []
@@ -485,30 +474,20 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                     time_mpi = time.perf_counter() - time_start_mpi
                     #row.append(time_mpi)
 
-                if self.check:
-                    print("color image #5")
                 #画像の左上に対象人物のIDを書いておく
                 cv2.putText(keyimage, 'Target: {}'.format(self.target_id), (5, 20), cv2.FONT_HERSHEY_PLAIN, 2, self.BLUE, thickness=2)
-                if self.check:
-                    print("color image #6")
+
 
                 #人物画像が作成された場合
                 if made_person_flag:
                     #指定したフレーム数 or 追尾対象を認識できていないならRe-ID実行
                     if self.n_frame % self.reid_freq == 0 or not self.target_flag:
-                        if self.check:
-                            print("Re-ID #1")
-
                         #print("People: ", len(people_list))
                         time_start_reid = time.perf_counter()
                         #Re-ID実行
                         target_index, pid_list, self.target_flag = self.reid.run_reid(people_list, color_image, self.target_id, keypoints)
                         self.n_reid += 1
                         #target_index: OpenPoseで検出した順番が0埋めの文字列として入っている．追尾対象がいないと判断された場合は'Not_exist'が入っている．
-                    
-                        if self.check:
-                            print("Re-ID #2")
-                    
                         
                         time_reid = time.perf_counter() - time_start_reid
                         #row.append(time_reid)
@@ -517,8 +496,6 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                         if self.target_flag:
                             target_index = int(target_index)
                             time_start_circle = time.perf_counter()
-                            if self.check:
-                                print("Re-ID #3")
                         
                             #追尾の基準点として対象の心臓部を丸で囲う
                             target_point = keypoints[target_index][1]
@@ -574,25 +551,17 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
 
                         #追尾対象が見つからなかった場合
                         else:
-                            if self.check:
-                                print("direction #4")
                             self._d_motion_instruct.data.vx = 0.0
 
                             #対象が直前までいた方向に回転する
                             if self.last_time == 'left':
-                                if self.check:
-                                    print("direction #5")
                                 self._d_motion_instruct.data.va = 2*self.va
 
                             elif self.last_time == 'right':
-                                if self.check:
-                                    print("direction #6")
                                 self._d_motion_instruct.data.va = -2*self.va
                 
                     #Re-IDを行わない場合
                     else:
-                        if self.check:
-                            print("non Re-ID #1")
                         #現在のフレームで検出された人たちの心臓部の位置
                         cur_pos_list = keypoints[:, 1, :2]
                         #print("current position list: ", cur_pos_list)
@@ -607,9 +576,6 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                         cur_target_pos = keypoints[target_index][1]
                         self.target_x = int(cur_target_pos[0])
                         self.target_y = int(cur_target_pos[1])
-
-                        if self.check:
-                            print("non Re-ID #2")
 
                     #検出された人物全員を矩形で囲い，追尾の基準点を丸で囲う
                     for i, box in enumerate(bbox_list):
@@ -630,21 +596,17 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                     #ロボットへの動作指令
                     #基準点がカメラ画角の中央より左側にある場合
                     if self.target_x < self.l_border:
-                        if self.check:
-                            print("direction #1")
+
                         self._d_motion_instruct.data.va = self.va
                         self.last_time = 'left'
 
                     #基準点が画角中心より右側にある場合
                     elif self.target_x > self.r_border:
-                        if self.check:
-                            print("direction #2")
+
                         self._d_motion_instruct.data.va = -1 * self.va
                         self.last_time = 'right'
 
                     else:
-                        if self.check:
-                            print("direction #3")
                         self._d_motion_instruct.data.va = 0
                         self.last_time = 'center'
                 
@@ -652,19 +614,13 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                 #人物画像が作成されなかった場合
                 else:
                     self.target_flag = False
-                    if self.check:
-                        print("no peron #1")
                     cv2.circle(keyimage, (int(self.width/2), int(self.height/2)), 10, self.BLUE, thickness=3)
                     self._d_motion_instruct.data.vx = 0.0
                     #対象が直前までいた方向に回転する
                     if self.last_time == 'left':
-                        if self.check:
-                            print("no person #2")
                         self._d_motion_instruct.data.va = 2*self.va
 
                     elif self.last_time == 'right':
-                        if self.check:
-                            print("no person #3")
                         self._d_motion_instruct.data.va = -2*self.va
 
                 cv2.putText(keyimage, self.last_time, (250, 20), cv2.FONT_HERSHEY_PLAIN, 2, self.BLUE, thickness=2)
@@ -694,8 +650,6 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             '''
             if self._depth_dataIn.isNew():
                 time_start_dec_dep = time.perf_counter()
-                if self.check:
-                    print("depth image #1")
                 #深度データのデコード
                 self._d_depth_data = self._depth_dataIn.read()
                 #深度データのByte列
@@ -709,8 +663,6 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
 
                 #カラー画像にする
                 depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_scale, alpha=0.03), cv2.COLORMAP_JET)
-                if self.check:
-                    print("depth image #2")
 
                 time_dec_dep = time.perf_counter() - time_start_dec_dep
                 #row.append(time_dec_dep)
@@ -719,15 +671,12 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                 time_start_dist = time.perf_counter()
                 try:
                     target_dist = depth_scale[self.target_y][self.target_x] / 1000
-                    if self.check:
-                        print("depth image #3")
+
                 #対象が検出出来なかった場合の処理
                 except:
                     target_dist = 0
                     self.target_x = int(self.width / 2)
                     self.target_y = int(self.height / 2)
-                    if self.check:
-                        print("depth image #4")
 
                 time_dist = time.perf_counter() - time_start_dist
                 #row.append(time_dist)
@@ -737,8 +686,6 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                 cv2.circle(depth_colormap, (self.target_x, self.target_y), 10, (255, 255, 255), thickness=3)
                 cv2.putText(depth_colormap, str(target_dist) + ' m', (5, 20), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), thickness=2)
 
-                if self.check:
-                    print("depth image #5")
                 depth_img_flag = True
 
                 '''
@@ -762,9 +709,6 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
                     elif target_dist < self.min_dist:
                         self._d_motion_instruct.data.vx = 0.0
 
-                    if self.check:
-                        print("speed #1")
-
                 else:
                     self._d_motion_instruct.data.vx = 0.0
                     #self._d_motion_instruct.data.va = 0.0
@@ -777,8 +721,6 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             '''
             画像出力
             '''
-            if self.check:
-                print("imshow #1")
             if color_img_flag and depth_img_flag:
                 #FPS計算
                 self.n_frame += 1
@@ -790,25 +732,18 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
 
                 cur_fps = self.n_frame / laptime
                 cv2.putText(depth_colormap, "FPS: {:2f}".format(cur_fps), (5, 63), cv2.FONT_HERSHEY_PLAIN, 2, (255, 255, 255), thickness=2)
-                if self.check:
-                    print("imshow #2")
                 time_start_imshow = time.perf_counter()
 
                 key_image_dim = keyimage.shape
                 depth_map_dim = depth_colormap.shape
-                if self.check:
-                    print("imshow #3")
 
                 #カラー画像と深度画像を横並びにする
                 if key_image_dim != depth_map_dim:
                     resized_keyimage = cv2.resize(keyimage, dsize=(depth_map_dim[1], depth_map_dim[0]), interpolation=cv2.INTER_AREA)
                     images = np.hstack((resized_keyimage, depth_colormap))
-                    if self.check:
-                        print("imshow #4")
+
                 else:
                     images = np.hstack((keyimage, depth_colormap))
-                    if self.check:
-                        print("imshow #5")
 
         
                 cv2.imshow("Image", images)
@@ -823,23 +758,19 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             
                 print("{} frame, {:3f} FPS".format(self.n_frame, cur_fps), file=self.f)
             
-
-            #print("Motion > ", self._d_motion_instruct)
-            #print("vx: ", self._d_motion_instruct.data.vx)
-            #print("va: ", self._d_motion_instruct.data.va)
-
             time_exe = time.perf_counter() - time_start_exe
             #row.append(time_exe)
             #row.insert(self.n_frame)
-        
-            if self.check:
-                print("cycle end")
             #self.csv_writer.writerow(row)
 
             return RTC.RTC_OK
-	    
+        
         except Exception as e:
-            print("error: ", e)
+            _, _, trace_back = sys.exc_info()
+            filename = trace_back.tb_frame.f_code.co_filename
+            line_no = trace_back.tb_lineno
+
+            print("File: {], LiNe No. {}, error: ".format(filename, lineno), e)
     ###
     ##
     ## The aborting action when main logic error occurred.
@@ -852,7 +783,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
     #def onAborting(self, ec_id):
     #
     #    return RTC.RTC_OK
-	
+    
     ###
     ##
     ## The error action in ERROR state
@@ -865,7 +796,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
     #def onError(self, ec_id):
     #
     #    return RTC.RTC_OK
-	
+    
     ###
     ##
     ## The reset action that is invoked resetting
@@ -878,7 +809,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
     #def onReset(self, ec_id):
     #
     #    return RTC.RTC_OK
-	
+    
     ###
     ##
     ## The state update action that is invoked after onExecute() action
@@ -892,7 +823,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
     #def onStateUpdate(self, ec_id):
     #
     #    return RTC.RTC_OK
-	
+    
     ###
     ##
     ## The action that is invoked when execution context's rate is changed
@@ -905,7 +836,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
     #def onRateChanged(self, ec_id):
     #
     #    return RTC.RTC_OK
-	
+    
 
 
 

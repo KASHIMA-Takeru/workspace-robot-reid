@@ -142,7 +142,6 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 150):
         '''
         #両耳の位置が推定されている場合
         if keys[17][2] > thrs and keys[18][2] > thrs:
-            #print("mpi#1")
             #pm: 両耳間の距離(A3: 145.7)から算出
             pm = abs(keys[17][0] - keys[18][0]) / 145.7
             
@@ -155,7 +154,6 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 150):
         #片耳のみ位置が推定されている場合(鼻の位置が推定されている前提)
         #右耳は推定されているが左耳は推定されていない場合
         elif keys[17][2] > thrs and keys[18][2] < thrs and keys[0][2] > thrs:
-            #print("mpi#2")
             #pm: 鼻~頭部後端(A21: 199.5)と耳~頭部後端(A27: 87.4)から算出
             pm = abs(keys[0][0] - keys[17][0]) / (199.5 - 87.4)
             
@@ -167,7 +165,6 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 150):
             
         #左耳の位置は推定されているが右耳の位置は推定されていない場合       
         elif keys[18][2] > thrs and keys[17][2] < thrs and keys[0][2] > thrs:
-            #print("mpi#3")
             #pm: 鼻~頭部後端(A21: 199.5)と耳~頭部後端(A27: 87.4)から算出
             pm = abs(keys[0][0] - keys[18][0]) / (199.5 - 87.4)
             
@@ -179,30 +176,25 @@ def make_person_image(image: np.ndarray, keypoints, thrs = 0.1, ex_len = 150):
         
         #両肩の位置が検出されている場合
         elif keys[2][2] > thrs and keys[5][2] > thrs:
-            #print("mpi#4")
             shoulder_width = m.dist((keys[2][0], keys[2][1]), (keys[5][0], keys[5][1]))
             pm = shoulder_width / 378.8
             
         #右肘と右手首が検出されている場合
         elif keys[3][2] > thrs and keys[4][2] > thrs:
-            #print("mpi#5")
             forearm_len = m.dist((keys[3][0], keys[3][1]), (keys[4][0], keys[4][1]))
             pm = forearm_len / 240.5
 
         #左肘と左手首が検出されている場合
         elif keys[6][2] > thrs and keys[7][2] > thrs:
-            #print("mpi#6")
             forearm_len = m.dist((keys[6][0], keys[6][1]), (keys[7][0], keys[7][1]))
             pm = forearm_len / 240.5
 
         else:
-            #print("else")
             pm = init_pm
 
         '''
         人物領域の決定
         '''
-        #print("mpi#7")
         #上下左右端
         top = max(0, round(min(keys[key][:, 1]) - pm * ex_len))
         bottom = min(h, round(max(keys[key][:, 1]) + pm * ex_len))
