@@ -137,87 +137,91 @@ class ReIDBase:
         '''
         CNNの準備
         '''
-        #全身画像を学習したCNNの準備
-        model_wholebody = mym.build_model(
-            name = self.pivod_dict['wholebody']['model_name'],
-            pretrained = False
-            )
-        model_wholebody = model_wholebody.cuda()
-        model_wholebody.eval()
-        print("built model")
-        mym.load_model(model_wholebody, self.pivod_dict['wholebody']['path'])
-        self.pivod_dict['wholebody']['model'] = model_wholebody        
+        try:
+            #全身画像を学習したCNNの準備
+            model_wholebody = mym.build_model(
+                name = self.pivod_dict['wholebody']['model_name'],
+                pretrained = False
+                )
+            model_wholebody = model_wholebody.cuda()
+            model_wholebody.eval()
+            print("built model")
+            mym.load_model(model_wholebody, self.pivod_dict['wholebody']['path'])
+            self.pivod_dict['wholebody']['model'] = model_wholebody        
         
-        if self.use_part:
-            #身体部位画像を学習したCNNの準備
-            for part in self.part_list:
-                #CNN準備
-                model = mym.build_model(
-                    name = self.pivod_dict[part]['model_name']
-                    )
-                model = model.cuda()
-                model.eval()
-                #学習済みファイル読み込み
-                mym.load_model(model, self.pivod_dict[part]['path'])
-                self.pivod_dict[part]['model'] = model
-        
-        if self.use_nn:
-            self.mynn.load_state_dict(torch.load(nn_path))
-            self.mynn.cuda()
-            self.mynn.eval()
-
-        '''
-        Summary表示
-        '''
-        print("="*3 + " Summary " + "="*100)
-        print("Part" + " "*8 + "|CNN" + " "*28 + "|Model" + " "*40 + "|Size" + " "*8 + "|Load")
-        for part in self.pivod_dict.keys():
-            name = self.pivod_dict[part]['model_name']
-            model = osp.basename(self.pivod_dict[part]['path'])
-            height = self.pivod_dict[part]['size'][0]
-            width = self.pivod_dict[part]['size'][1]
-            size = "{} x {}".format(height, width)
-            load = "O" if osp.isfile(self.pivod_dict[part]['path']) else "X"
-            
-            print(part + " "*(13-len(part)) + name + " "*(32-len(name)) + model + " "*(46-len(model)) + size + " "*(12-len(size)), load)
-        print("="*112)
-        
-        '''
-        検索データの特徴抽出
-        '''
-        print("Extracting gallery features...")
-        #画像取得
-        gallery_images = glob.glob(osp.join(gpath, '*.jpg'))
-        for gimg, _ in zip(gallery_images, tqdm.tqdm(range(len(gallery_images)))):
-            #画像ファイル名取得
-            gname = osp.splitext(osp.basename(gimg))[0]
-            self.gname_list.append(gname)
-            #画像パスからID取得
-            gid, _ = myt.get_id(gimg)
-            self.gid_list.append(gid)
-            
-            #CNNに画像を入力して特徴ベクトル抽出
-            gf = myt.feature_extractor(self.pivod_dict['wholebody']['model'], gimg, self.pivod_dict['wholebody']['size'])
-            #辞書に追加            
-            self.gf_list.append(gf.clone().detach())
-            
-            #身体部位画像の特徴抽出
             if self.use_part:
-                self.gallery_part_data[gname] = {k: None for k in self.pivod_dict.keys()}
-                #身体部位ごとのループ
+                #身体部位画像を学習したCNNの準備
                 for part in self.part_list:
-                    #身体部位画像のパス
-                    ppath = osp.join(gpath, 'part', part, gname + '_{}.jpg'.format(part))
-                    #print("part image path > ", ppath)
-                    #身体部位の画像が存在したらCNNに入力して特徴抽出
-                    if osp.isfile(ppath):
-                        gpf = myt.feature_extractor(self.pivod_dict[part]['model'], ppath, self.pivod_dict[part]['size'])
-                        #辞書に追加
-                        self.gallery_part_data[gname][part] = gpf
+                    #CNN準備
+                    model = mym.build_model(
+                        name = self.pivod_dict[part]['model_name']
+                        )
+                    model = model.cuda()
+                    model.eval()
+                    #学習済みファイル読み込み
+                    mym.load_model(model, self.pivod_dict[part]['path'])
+                    self.pivod_dict[part]['model'] = model
         
-        self.gf_list = torch.cat(self.gf_list, dim=0)
+            if self.use_nn:
+                self.mynn.load_state_dict(torch.load(nn_path))
+                self.mynn.cuda()
+                self.mynn.eval()
+
+            '''
+            Summary表示
+            '''
+            print("="*3 + " Summary " + "="*100)
+            print("Part" + " "*8 + "|CNN" + " "*28 + "|Model" + " "*40 + "|Size" + " "*8 + "|Load")
+            for part in self.pivod_dict.keys():
+                name = self.pivod_dict[part]['model_name']
+                model = osp.basename(self.pivod_dict[part]['path'])
+                height = self.pivod_dict[part]['size'][0]
+                width = self.pivod_dict[part]['size'][1]
+                size = "{} x {}".format(height, width)
+                load = "O" if osp.isfile(self.pivod_dict[part]['path']) else "X"
+            
+                print(part + " "*(13-len(part)) + name + " "*(32-len(name)) + model + " "*(46-len(model)) + size + " "*(12-len(size)), load)
+            print("="*112)
         
-        #print("Gallery IDs > ", self.gid_list)
+            '''
+            検索データの特徴抽出
+            '''
+            print("Extracting gallery features...")
+            #画像取得
+            gallery_images = glob.glob(osp.join(gpath, '*.jpg'))
+            for gimg, _ in zip(gallery_images, tqdm.tqdm(range(len(gallery_images)))):
+                #画像ファイル名取得
+                gname = osp.splitext(osp.basename(gimg))[0]
+                self.gname_list.append(gname)
+                #画像パスからID取得
+                gid, _ = myt.get_id(gimg)
+                self.gid_list.append(gid)
+            
+                #CNNに画像を入力して特徴ベクトル抽出
+                gf = myt.feature_extractor(self.pivod_dict['wholebody']['model'], gimg, self.pivod_dict['wholebody']['size'])
+                #辞書に追加            
+                self.gf_list.append(gf.clone().detach())
+            
+                #身体部位画像の特徴抽出
+                if self.use_part:
+                    self.gallery_part_data[gname] = {k: None for k in self.pivod_dict.keys()}
+                    #身体部位ごとのループ
+                    for part in self.part_list:
+                        #身体部位画像のパス
+                        ppath = osp.join(gpath, 'part', part, gname + '_{}.jpg'.format(part))
+                        #print("part image path > ", ppath)
+                        #身体部位の画像が存在したらCNNに入力して特徴抽出
+                        if osp.isfile(ppath):
+                            gpf = myt.feature_extractor(self.pivod_dict[part]['model'], ppath, self.pivod_dict[part]['size'])
+                            #辞書に追加
+                            self.gallery_part_data[gname][part] = gpf
+        
+            self.gf_list = torch.cat(self.gf_list, dim=0)
+        
+            #print("Gallery IDs > ", self.gid_list)
+
+        except Exception as e:
+            print(e)
         
     
     '''
