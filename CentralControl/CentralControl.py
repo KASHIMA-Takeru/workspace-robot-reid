@@ -178,25 +178,28 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             }
      
         #追尾対象のID
-        self.target_id = '001'
-        #保存フォルダ
-        self.save_folder = r'D:\master_research\Robot\tracking_test'
+        self.target_id = '022'
+        self.id_list = ['015', '016', '022', '024']
+        #self.id_list = ['001', '002']
+        #保存フォルダ101
+        #D:\master_research\Robot\gallery_storage\1121 1213
+        self.save_folder = r'D:\master_research\Robot\experiment1220'
         #検索データの保存先
-        self.gallery_folder = r'D:\master_research\Robot\gallery_storage\1121'
+        self.gallery_folder = r'D:\master_research\Robot\gallery_storage\1213'
         #NNのパス
-        self.nn_path = 'nn_model.pth'
+        self.nn_path = r'C:\Users\ab19109\workspce_robot_reid\CentralControl\nn_model.pth'
 
         #Re-IDを実行する頻度(frame / 回)
-        self.reid_freq = 1
+        self.reid_freq = 20
         
         #身体部位画像でのRe-IDを行うか
-        self.use_part = True
+        self.use_part = False
         #同一人物かの判断にNNを使うか
-        self.use_nn = True
+        self.use_nn = False
         #同一人物か異なる人物かを判断する閾値
         self.thrs = 300
         #探索する最大人数
-        self.maxk = 10
+        self.maxk = 50
 
         '''
         ロボットの制御に使用するものたち
@@ -279,7 +282,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             )
 
         #Re-ID準備
-        self.reid.prepare(self.gallery_folder, self.nn_path)
+        self.reid.prepare(self.gallery_folder, self.nn_path, self.id_list)
 
         
         print("Ready for Re-ID")
@@ -348,6 +351,8 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
         print("--------------", file=self.f)
         #print(self.pivod_dict, file=self.f)
         print("Threshold > ", self.thrs, file=self.f)
+        print("Use body part: ", self.use_part, file=self.f)
+        print("Use NN: ", self.use_nn, file=self.f)
         print("\n- Robot speed", file=self.f)
         print("Normal speed: ", self.normal_speed, file=self.f)
         print("1st slow speed: {} m/s (less than {} m)".format(self.slow_speeds[0], self.slow_dist[0]), file=self.f)
@@ -773,7 +778,7 @@ class CentralControl(OpenRTM_aist.DataFlowComponentBase):
             filename = trace_back.tb_frame.f_code.co_filename
             line_no = trace_back.tb_lineno
 
-            print("File: {], LiNe No. {}, error: ".format(filename, lineno), e)
+            print("File: {], LiNe No. {}, error: ".format(filename, line_no), e)
     ###
     ##
     ## The aborting action when main logic error occurred.
@@ -873,4 +878,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

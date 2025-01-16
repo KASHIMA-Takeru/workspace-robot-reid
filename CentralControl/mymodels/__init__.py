@@ -15,3 +15,5 @@ from .osnet_base import *
 from .osnet_part_addblock import *
 from .osnet_part_addblock_dellarge import *
 from .osnet_part_delsmall import *
+
+from .model_dict import *
