@@ -259,7 +259,7 @@ OpenPoseでは，全身画像を入力すると1人あたり最大25か所のキ
 | 11 | 右足首 | 24 | 右かかと |
 | 12 | 左脚付け根 | 
  
-#コンポーネントの配置図
+## コンポーネントの配置図
 　このプロジェクトで用いるコンポーネントは，`RealSense`，`CentralControl`，`Concierge_Type3_verOLD`の3つである．`RealSense`は深度カメラのRealSenseでカラー画像と深度画像を取得して研PCに送信するコンポーネント，`CentralControl`はカラー画像で人物検出とRe-IDを実行して追尾対象の人物の位置を把握し，深度データでロボットから追尾対象までの距離を把握してロボットの旋回方向と移動速度を出力するコンポーネント，`Concierge_Type3_verOLD`はロボットを制御するコンポーネントである．RealSenseとConcierge_Type3_verOLDはロボットに接続したノートPC上でコンポーネントを配置する．
  ![コンポーネント配置](https://github.com/user-attachments/assets/8c1f38dd-86b8-4e59-b920-d0cb3a646f00)
 
